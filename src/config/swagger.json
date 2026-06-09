@@ -1,0 +1,815 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "HighCRM Backend API Documentation",
+    "version": "1.1.0",
+    "description": "Secure administration REST API for HighCRM. Handles JWT Authentication (with session refreshes), traditional email/password login, and passwordless OTP verification via SMTP. Includes a dynamic Roles and Permissions Matrix (RBAC). All endpoints track audit fields (`createdBy` and `updatedBy` referencing User accounts)."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000/api",
+      "description": "Local Development Server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Enter your Access JWT token in the format: Bearer <token>"
+      }
+    },
+    "schemas": {
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "example": 1 },
+          "name": { "type": "string", "example": "John Doe" },
+          "email": { "type": "string", "format": "email", "example": "johndoe@example.com" },
+          "country": { "type": "string", "nullable": true, "example": "Canada" },
+          "phone": { "type": "string", "nullable": true, "example": "+15551234567" },
+          "status": { "type": "string", "enum": ["active", "pending", "blocked"], "example": "pending" },
+          "wallet_balance": { "type": "string", "example": "0" },
+          "lb_name": { "type": "string", "nullable": true, "example": "Vancouver Branch" },
+          "isIB": { "type": "boolean", "example": false },
+          "role": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string", "format": "uuid" },
+              "name": { "type": "string" },
+              "key": { "type": "string" },
+              "scope": { "type": "string", "example": "ALL_MODULES" },
+              "status": { "type": "string", "enum": ["ACTIVE", "DRAFT", "INACTIVE"], "example": "ACTIVE" }
+            }
+          },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" },
+          "createdBy": { "type": "string", "nullable": true, "example": "Super Admin" },
+          "updatedBy": { "type": "string", "nullable": true, "example": "Super Admin" }
+        }
+      },
+      "Role": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "name": { "type": "string" },
+          "key": { "type": "string" },
+          "description": { "type": "string" },
+          "scope": { "type": "string" },
+          "status": { "type": "string", "enum": ["ACTIVE", "DRAFT", "INACTIVE"] },
+          "adminsCount": { "type": "integer" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" },
+          "createdBy": { "type": "string", "nullable": true, "example": "Super Admin" },
+          "updatedBy": { "type": "string", "nullable": true, "example": "Super Admin" }
+        }
+      },
+      "Module": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "name": { "type": "string" },
+          "key": { "type": "string" },
+          "description": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" },
+          "createdBy": { "type": "integer", "nullable": true, "example": 1 },
+          "updatedBy": { "type": "integer", "nullable": true, "example": 1 }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": false },
+          "message": { "type": "string" },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field": { "type": "string" },
+                "message": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "API Health check",
+        "description": "Returns the status of the HighCRM Backend API.",
+        "tags": ["System"],
+        "responses": {
+          "200": {
+            "description": "API is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "message": { "type": "string", "example": "HighCRM Backend API is healthy and running." },
+                    "timestamp": { "type": "string", "format": "date-time" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "summary": "Register a new user",
+        "description": "Registers a new system administrator. The user is assigned the default 'Read Only' role and starts in a 'pending' state. Once registered, they must log in using an OTP sent to their email to activate the account.",
+        "tags": ["Authentication"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "email", "password"],
+                "properties": {
+                  "name": { "type": "string", "example": "John Doe" },
+                  "email": { "type": "string", "format": "email", "example": "johndoe@example.com" },
+                  "password": { "type": "string", "example": "password123", "minLength": 6 },
+                  "country": { "type": "string", "example": "Canada" },
+                  "phone": { "type": "string", "example": "+15551234567" },
+                  "lb_name": { "type": "string", "example": "Vancouver Branch" },
+                  "isIB": { "type": "boolean", "example": false }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registration successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "accessToken": { "type": "string" },
+                        "refreshToken": { "type": "string" },
+                        "user": { "$ref": "#/components/schemas/User" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Validation failed", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "409": { "description": "Duplicate email", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "summary": "Authenticate user credentials",
+        "description": "Login traditionally with email and password. Returns access and refresh tokens. Fails if user is in 'pending' or 'blocked' status.",
+        "tags": ["Authentication"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": { "type": "string", "format": "email", "example": "admin@highcrm.com" },
+                  "password": { "type": "string", "example": "AdminPassword123!" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "accessToken": { "type": "string" },
+                        "refreshToken": { "type": "string" },
+                        "user": { "$ref": "#/components/schemas/User" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Invalid credentials", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "403": { "description": "Account pending/blocked", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/auth/otp/send": {
+      "post": {
+        "summary": "Request login/verification OTP code",
+        "description": "Generates a secure 6-digit verification code, hashes it, saves it to the user database record (valid for 5 minutes), and sends it to the recipient email via SMTP.",
+        "tags": ["Authentication"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email"],
+                "properties": {
+                  "email": { "type": "string", "format": "email", "example": "johndoe@example.com" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OTP sent successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "message": { "type": "string", "example": "Verification OTP has been sent to your email." }
+                  }
+                }
+              }
+            }
+          },
+          "403": { "description": "User is blocked" },
+          "404": { "description": "User not found" }
+        }
+      }
+    },
+    "/auth/otp/verify": {
+      "post": {
+        "summary": "Verify OTP code and sign-in",
+        "description": "Verifies the 6-digit OTP code against the database. If correct and not expired, logs the user in (issues access and refresh tokens) and automatically activates the account if its status was 'pending'.",
+        "tags": ["Authentication"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "otp"],
+                "properties": {
+                  "email": { "type": "string", "format": "email", "example": "johndoe@example.com" },
+                  "otp": { "type": "string", "example": "550000" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OTP verified, login successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "accessToken": { "type": "string" },
+                        "refreshToken": { "type": "string" },
+                        "user": { "$ref": "#/components/schemas/User" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "OTP expired or invalid" },
+          "401": { "description": "Incorrect OTP code" },
+          "404": { "description": "User not found" }
+        }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "summary": "Refresh access token",
+        "description": "Provide a valid refresh token to obtain a fresh access token and a rotated refresh token.",
+        "tags": ["Authentication"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["refreshToken"],
+                "properties": {
+                  "refreshToken": { "type": "string", "example": "eyJhbGciOi..." }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Token refreshed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "accessToken": { "type": "string" },
+                        "refreshToken": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Invalid refresh token", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "summary": "Fetch logged-in profile & permissions",
+        "description": "Retrieves the active session's profile, including their active Role and their full Permissions Matrix (actions mapped by module key).",
+        "tags": ["Authentication"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Profile retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "user": {
+                          "allOf": [
+                            { "$ref": "#/components/schemas/User" },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "permissions": {
+                                  "type": "object",
+                                  "additionalProperties": {
+                                    "type": "array",
+                                    "items": { "type": "string" }
+                                  },
+                                  "example": {
+                                    "dashboard": ["view"],
+                                    "trading": ["view", "export"],
+                                    "reports": ["view", "export"]
+                                  }
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/roles": {
+      "get": {
+        "summary": "List all system roles",
+        "description": "Returns all defined roles along with audit metadata and the count of administrators currently assigned to each.",
+        "tags": ["Roles & Permissions Matrix"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Roles retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Role" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": { "description": "Forbidden - Missing admin_management view permission" }
+        }
+      },
+      "post": {
+        "summary": "Create a new custom role",
+        "description": "Creates a custom user role and optionally pre-populates its permission matrix. Audits the creator.",
+        "tags": ["Roles & Permissions Matrix"],
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                  "name": { "type": "string", "example": "Compliance Lead" },
+                  "description": { "type": "string", "example": "Manages compliance audits" },
+                  "scope": { "type": "string", "example": "COMPLIANCE_MODULES" },
+                  "status": { "type": "string", "enum": ["ACTIVE", "DRAFT"], "example": "ACTIVE" },
+                  "permissions": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "moduleKey": { "type": "string", "example": "reports" },
+                        "actions": {
+                          "type": "array",
+                          "items": { "type": "string" },
+                          "example": ["view", "export"]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Role created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": { "$ref": "#/components/schemas/Role" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Role already exists or validation error" }
+        }
+      }
+    },
+    "/roles/matrix": {
+      "get": {
+        "summary": "Get full global permissions matrix",
+        "description": "Returns the complete grid mapping of active roles, modules, and enabled action arrays. Matches the structural design of Screenshot 1.",
+        "tags": ["Roles & Permissions Matrix"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Matrix retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "roles": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" }, "name": { "type": "string" }, "key": { "type": "string" } } } },
+                        "modules": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" }, "name": { "type": "string" }, "key": { "type": "string" } } } },
+                        "matrix": {
+                          "type": "object",
+                          "description": "Keyed by Role ID",
+                          "additionalProperties": {
+                            "type": "object",
+                            "properties": {
+                              "roleName": { "type": "string" },
+                              "roleKey": { "type": "string" },
+                              "permissionsByModule": {
+                                "type": "object",
+                                "description": "Keyed by Module ID",
+                                "additionalProperties": {
+                                  "type": "object",
+                                  "properties": {
+                                    "moduleName": { "type": "string" },
+                                    "moduleKey": { "type": "string" },
+                                    "actions": { "type": "array", "items": { "type": "string" } }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/roles/modules": {
+      "get": {
+        "summary": "Get all system modules",
+        "description": "Returns all available system modules.",
+        "tags": ["Roles & Permissions Matrix"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Modules retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": { "type": "array", "items": { "$ref": "#/components/schemas/Module" } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/roles/{id}": {
+      "get": {
+        "summary": "Get role details and its permissions matrix",
+        "description": "Returns details of a specific role, accompanied by a flat array representing all modules and whether each action is enabled (true/false) for that role. Excellent for populating a toggle grid.",
+        "tags": ["Roles & Permissions Matrix"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Role matrix retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "role": { "$ref": "#/components/schemas/Role" },
+                        "matrix": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "moduleId": { "type": "string" },
+                              "moduleName": { "type": "string" },
+                              "moduleKey": { "type": "string" },
+                              "actions": {
+                                "type": "object",
+                                "properties": {
+                                  "view": { "type": "boolean" },
+                                  "create": { "type": "boolean" },
+                                  "edit": { "type": "boolean" },
+                                  "approve": { "type": "boolean" },
+                                  "delete": { "type": "boolean" },
+                                  "export": { "type": "boolean" },
+                                  "assign": { "type": "boolean" }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "description": "Role not found" }
+        }
+      },
+      "put": {
+        "summary": "Update role & permissions matrix",
+        "description": "Updates role parameters and replaces its permission matrix entries atomically within a transaction. Audits the updater.",
+        "tags": ["Roles & Permissions Matrix"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string", "example": "Compliance Lead" },
+                  "description": { "type": "string", "example": "Reviews compliance documents" },
+                  "scope": { "type": "string", "example": "COMPLIANCE_SCOPE" },
+                  "status": { "type": "string", "enum": ["ACTIVE", "DRAFT"] },
+                  "permissions": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "moduleKey": { "type": "string", "example": "users" },
+                        "actions": { "type": "array", "items": { "type": "string" }, "example": ["view", "edit", "approve"] }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Role updated successfully" },
+          "400": { "description": "Protected system role cannot be renamed or validation failed" },
+          "404": { "description": "Role not found" }
+        }
+      },
+      "delete": {
+        "summary": "Delete custom role",
+        "description": "Deletes a role from the system. Associated matrix settings cascade delete. Fails if users are assigned to the role or if it's a protected system role.",
+        "tags": ["Roles & Permissions Matrix"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Role deleted successfully" },
+          "400": { "description": "Cannot delete protected role or role with assigned users" },
+          "404": { "description": "Role not found" }
+        }
+      }
+    },
+    "/users": {
+      "get": {
+        "summary": "Get all admin users",
+        "description": "Returns a list of all system administrators, including their active role, profile details, status, and audit trail creators/updaters.",
+        "tags": ["Admin User Management"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Users retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/User" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new admin user",
+        "description": "Creates an admin user account. Requires roleId assignment.",
+        "tags": ["Admin User Management"],
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "email", "password", "roleId"],
+                "properties": {
+                  "name": { "type": "string", "example": "Jane Doe" },
+                  "email": { "type": "string", "format": "email", "example": "janedoe@example.com" },
+                  "password": { "type": "string", "example": "JanePassword123!" },
+                  "roleId": { "type": "string", "format": "uuid", "example": "uuid-of-compliance-role" },
+                  "status": { "type": "string", "enum": ["active", "pending", "blocked"], "example": "pending" },
+                  "country": { "type": "string", "example": "Germany" },
+                  "phone": { "type": "string", "example": "+4912345678" },
+                  "lb_name": { "type": "string", "example": "Berlin Hub" },
+                  "isIB": { "type": "boolean", "example": false }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "integer" },
+                        "name": { "type": "string" },
+                        "email": { "type": "string" },
+                        "roleId": { "type": "string" },
+                        "status": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Validation error" },
+          "404": { "description": "Role not found" }
+        }
+      }
+    },
+    "/users/{id}": {
+      "put": {
+        "summary": "Update admin user details",
+        "description": "Updates profile parameters (name, country, phone, lb_name, isIB, wallet_balance), roleId, or status. Prevents deactivating or demoting the bootstrap Super Admin.",
+        "tags": ["Admin User Management"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string", "example": "Jane Doe" },
+                  "email": { "type": "string", "format": "email", "example": "janedoe@example.com" },
+                  "password": { "type": "string", "example": "NewPassword123!" },
+                  "roleId": { "type": "string", "format": "uuid", "example": "new-role-uuid" },
+                  "status": { "type": "string", "enum": ["active", "pending", "blocked"] },
+                  "country": { "type": "string", "example": "Canada" },
+                  "phone": { "type": "string", "example": "+15559876543" },
+                  "lb_name": { "type": "string", "example": "Calgary Hub" },
+                  "isIB": { "type": "boolean", "example": true },
+                  "wallet_balance": { "type": "string", "example": "1500" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "User updated successfully" },
+          "400": { "description": "Lockout protection triggered or validation failed" },
+          "404": { "description": "User or role not found" }
+        }
+      },
+      "delete": {
+        "summary": "Delete admin user",
+        "description": "Deletes a user account. Prevents self-deletion or deletion of the bootstrap Super Admin ID 1.",
+        "tags": ["Admin User Management"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "User deleted successfully" },
+          "400": { "description": "Self-deletion or bootstrap deletion forbidden" },
+          "404": { "description": "User not found" }
+        }
+      }
+    }
+  }
+}
