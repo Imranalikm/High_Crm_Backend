@@ -24,7 +24,7 @@ async function startServer() {
     // Start Express server listening
     app.listen(PORT, () => {
       console.log(`[Server] Server is running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode.`);
-      console.log(`[Server] API endpoints available at: http://localhost:${PORT}/api`);
+      console.log(`[Server] API endpoints available at 1: http://localhost:${PORT}/api`);
     });
   } catch (error) {
     console.error('[Server] Failed to start server:', error);
