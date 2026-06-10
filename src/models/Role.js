@@ -32,6 +32,11 @@ const Role = sequelize.define('Role', {
     allowNull: false,
     defaultValue: 'ALL_MODULES'
   },
+  type: {
+    type: DataTypes.ENUM('admin', 'user'),
+    allowNull: false,
+    defaultValue: 'admin'
+  },
   status: {
     type: DataTypes.ENUM('ACTIVE', 'DRAFT', 'INACTIVE'),
     allowNull: false,

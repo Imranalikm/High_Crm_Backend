@@ -8,7 +8,7 @@ const bcrypt = require('bcryptjs');
  */
 async function register(req, res, next) {
   try {
-    const { name, email, password, country, phone, lb_name, isIB } = req.body;
+    const { name, email, password, country, phone } = req.body;
 
     // Validate request inputs
     if (!name || !email || !password) {
@@ -18,9 +18,9 @@ async function register(req, res, next) {
       });
     }
 
-    // Default registered users to 'Read Only' role
-    const readOnlyRole = await Role.findOne({ where: { key: 'read_only' } });
-    const roleId = readOnlyRole ? readOnlyRole.id : null;
+    // Default registered users to 'User' role (user panel, not admin)
+    const userRole = await Role.findOne({ where: { key: 'user' } });
+    const roleId = userRole ? userRole.id : null;
 
     // Create user. Status defaults to 'pending'
     const user = await User.create({
@@ -29,8 +29,6 @@ async function register(req, res, next) {
       password,
       country,
       phone,
-      lb_name,
-      isIB: isIB !== undefined ? isIB : false,
       roleId,
       status: 'pending'
     });
@@ -60,7 +58,7 @@ async function register(req, res, next) {
           name: userWithRole.name,
           email: userWithRole.email,
           status: userWithRole.status,
-          role: userWithRole.role ? { name: userWithRole.role.name, key: userWithRole.role.key } : null
+          role: userWithRole.role ? { name: userWithRole.role.name, key: userWithRole.role.key, type: userWithRole.role.type } : null
         }
       }
     });
@@ -128,7 +126,7 @@ async function login(req, res, next) {
           name: user.name,
           email: user.email,
           status: user.status,
-          role: user.role ? { name: user.role.name, key: user.role.key } : null
+          role: user.role ? { name: user.role.name, key: user.role.key, type: user.role.type } : null
         }
       }
     });
@@ -269,7 +267,7 @@ async function verifyOTP(req, res, next) {
           name: user.name,
           email: user.email,
           status: user.status === 'pending' ? 'active' : user.status,
-          role: user.role ? { name: user.role.name, key: user.role.key } : null
+          role: user.role ? { name: user.role.name, key: user.role.key, type: user.role.type } : null
         }
       }
     });
@@ -360,7 +358,13 @@ async function getMe(req, res, next) {
     const permissionsMatrix = {};
     
     if (user.role) {
-      if (user.role.key === 'super_admin') {
+      if (user.role.type === 'user') {
+        // User-type roles get access to all user-facing modules
+        const userModules = ['dashboard', 'trading', 'copy_trading', 'prop_trading', 'finance', 'ib_system', 'support_desk', 'reports'];
+        userModules.forEach(mod => {
+          permissionsMatrix[mod] = ['view'];
+        });
+      } else if (user.role.key === 'super_admin') {
         // Super admin has all modules and actions
         const allModules = await Module.findAll();
         const allActions = ['view', 'create', 'edit', 'approve', 'delete', 'export', 'assign'];
@@ -397,6 +401,7 @@ async function getMe(req, res, next) {
             id: user.role.id,
             name: user.role.name,
             key: user.role.key,
+            type: user.role.type,
             scope: user.role.scope,
             status: user.role.status
           } : null,

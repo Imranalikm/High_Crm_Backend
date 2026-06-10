@@ -21,6 +21,14 @@ function requirePermission(moduleKey, action) {
         return next();
       }
 
+      // 2. Block user-type roles from admin routes
+      if (user.role && user.role.type === 'user') {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied. This route is restricted to admin panel users.'
+        });
+      }
+
       const roleId = user.roleId;
       if (!roleId) {
         return res.status(403).json({

@@ -24,6 +24,7 @@ const defaultRoles = [
     key: 'super_admin',
     description: 'Full unrestricted access to all modules and system settings.',
     scope: 'ALL_MODULES',
+    type: 'admin',
     status: 'ACTIVE'
   },
   {
@@ -31,6 +32,7 @@ const defaultRoles = [
     key: 'risk_officer',
     description: 'Access to risk management, trading oversight, and compliance monitoring.',
     scope: 'RISK_MODULES',
+    type: 'admin',
     status: 'ACTIVE'
   },
   {
@@ -38,6 +40,7 @@ const defaultRoles = [
     key: 'compliance',
     description: 'KYC, AML, document review, and regulatory reporting access.',
     scope: 'COMPLIANCE_MODULES',
+    type: 'admin',
     status: 'ACTIVE'
   },
   {
@@ -45,6 +48,7 @@ const defaultRoles = [
     key: 'finance',
     description: 'Finance, payouts, commissions, and transaction review.',
     scope: 'FINANCE_MODULES',
+    type: 'admin',
     status: 'ACTIVE'
   },
   {
@@ -52,6 +56,7 @@ const defaultRoles = [
     key: 'support_agent',
     description: 'User-facing support, ticket management, and view access.',
     scope: 'SUPPORT_MODULES',
+    type: 'admin',
     status: 'ACTIVE'
   },
   {
@@ -59,7 +64,16 @@ const defaultRoles = [
     key: 'read_only',
     description: 'View-only access to all non-sensitive modules.',
     scope: 'VIEW_ONLY',
+    type: 'admin',
     status: 'DRAFT'
+  },
+  {
+    name: 'User',
+    key: 'user',
+    description: 'Regular registered user with access to all user-facing modules.',
+    scope: 'USER_PANEL',
+    type: 'user',
+    status: 'ACTIVE'
   }
 ];
 
