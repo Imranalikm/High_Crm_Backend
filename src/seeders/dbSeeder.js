@@ -75,8 +75,8 @@ async function seedDatabase() {
       admin = await User.create({
         id: ADMIN_ID,
         name: 'Super Admin',
-        email: 'admin@highcrm.com',
-        password: 'AdminPassword123!', // will be hashed automatically by user hooks
+        email: process.env.SEED_ADMIN_EMAIL || 'admin@highcrm.com',
+        password: process.env.SEED_ADMIN_PASSWORD || 'AdminPassword123!', // will be hashed automatically by user hooks
         status: 'active',
         createdBy: ADMIN_ID,
         updatedBy: ADMIN_ID

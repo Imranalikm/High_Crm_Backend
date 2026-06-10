@@ -36,9 +36,12 @@ function errorHandler(err, req, res, next) {
 
   // Fallback for general errors
   const statusCode = err.status || 500;
+  const isProd = process.env.NODE_ENV === 'production';
   return res.status(statusCode).json({
     success: false,
-    message: err.message || 'An unexpected error occurred on the server.'
+    message: isProd && statusCode === 500
+      ? 'An unexpected error occurred on the server.'
+      : (err.message || 'An unexpected error occurred on the server.')
   });
 }
 

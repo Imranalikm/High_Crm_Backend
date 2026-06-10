@@ -18,7 +18,7 @@ app.use(helmet({
   contentSecurityPolicy: false
 }));
 app.use(cors({
-  origin: '*', // Customize this in production to restrict allowed domains
+  origin: process.env.CORS_ORIGIN || '*', // Customize this in production to restrict allowed domains
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
@@ -34,6 +34,17 @@ if (process.env.NODE_ENV !== 'test') {
 // Request parsing
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Health Check Endpoint
+app.get('/api/health', (req, res) => {
+  res.status(200).json({
+    success: true,
+    status: 'ok',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
 
 // API Router mounted at /api
 app.use('/api', apiRoutes);
