@@ -18,9 +18,22 @@ app.use(helmet({
   contentSecurityPolicy: false
 }));
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || '*', // Customize this in production to restrict allowed domains
+  origin: function (origin, callback) {
+    const allowedOrigins = process.env.CORS_ORIGIN
+      ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
+      : [];
+
+    // Allow requests with no origin (Postman, curl, server-to-server)
+    // or if origin is in the allowed list, or if no CORS_ORIGIN is set (allow all)
+    if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
 }));
 
 // Serve Swagger API documentation
