@@ -35,10 +35,6 @@ const Kyc = sequelize.define('Kyc', {
     type: DataTypes.STRING,
     allowNull: true
   },
-  phoneCode: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
   phone: {
     type: DataTypes.STRING,
     allowNull: true

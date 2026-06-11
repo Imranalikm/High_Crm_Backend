@@ -65,7 +65,7 @@ async function submitKyc(req, res, next) {
 
     // Extract fields from request body
     const {
-      fullName, dateOfBirth, country, email, phoneCode, phone,
+      fullName, dateOfBirth, country, email, phone,
       streetAddress, city, postalCode,
       idDocType, idDocNumber, idExpiryDate, idCountryOfIssue,
       addressDocType, addressDocIssueDate
@@ -129,7 +129,6 @@ async function submitKyc(req, res, next) {
       dateOfBirth,
       country: country || kyc.country,
       email: email || kyc.email,
-      phoneCode: phoneCode || kyc.phoneCode,
       phone: phone || kyc.phone,
       streetAddress,
       city,

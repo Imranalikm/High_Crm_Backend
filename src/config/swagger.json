@@ -1009,7 +1009,6 @@
                   "dateOfBirth": { "type": "string", "format": "date", "example": "1995-03-15" },
                   "country": { "type": "string", "example": "India", "description": "Optional — pre-filled from registration" },
                   "email": { "type": "string", "format": "email", "example": "aarav@example.com", "description": "Optional — pre-filled from registration" },
-                  "phoneCode": { "type": "string", "example": "+91" },
                   "phone": { "type": "string", "example": "9876543210", "description": "Optional — pre-filled from registration" },
                   "streetAddress": { "type": "string", "example": "123 Main Street" },
                   "city": { "type": "string", "example": "Mumbai" },
