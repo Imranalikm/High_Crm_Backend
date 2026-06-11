@@ -71,13 +71,9 @@ async function submitKyc(req, res, next) {
       addressDocType, addressDocIssueDate
     } = req.body;
 
-    // Validate required fields
+    // Validate only KYC-specific required fields (name, email, phone, country already in draft from registration)
     const missingFields = [];
-    if (!fullName) missingFields.push('fullName');
     if (!dateOfBirth) missingFields.push('dateOfBirth');
-    if (!country) missingFields.push('country');
-    if (!email) missingFields.push('email');
-    if (!phone) missingFields.push('phone');
     if (!streetAddress) missingFields.push('streetAddress');
     if (!city) missingFields.push('city');
     if (!postalCode) missingFields.push('postalCode');
@@ -127,14 +123,14 @@ async function submitKyc(req, res, next) {
     if (req.files.selfieImage) filePaths.selfieImage = `/uploads/kyc/${req.files.selfieImage[0].filename}`;
     if (req.files.addressDocImage) filePaths.addressDocImage = `/uploads/kyc/${req.files.addressDocImage[0].filename}`;
 
-    // Update KYC record
+    // Update KYC record — use new values if provided, otherwise keep draft values
     await kyc.update({
-      fullName,
+      fullName: fullName || kyc.fullName,
       dateOfBirth,
-      country,
-      email,
-      phoneCode: phoneCode || null,
-      phone,
+      country: country || kyc.country,
+      email: email || kyc.email,
+      phoneCode: phoneCode || kyc.phoneCode,
+      phone: phone || kyc.phone,
       streetAddress,
       city,
       postalCode,
