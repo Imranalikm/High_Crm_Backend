@@ -3,6 +3,7 @@ const User = require('./User');
 const Role = require('./Role');
 const Module = require('./Module');
 const RolePermission = require('./RolePermission');
+const Kyc = require('./Kyc');
 
 // User <-> Role association
 User.belongsTo(Role, { foreignKey: 'roleId', as: 'role' });
@@ -29,10 +30,19 @@ Module.belongsTo(User, { as: 'updater', foreignKey: 'updatedBy' });
 RolePermission.belongsTo(User, { as: 'creator', foreignKey: 'createdBy' });
 RolePermission.belongsTo(User, { as: 'updater', foreignKey: 'updatedBy' });
 
+// User <-> Kyc association (one-to-one)
+User.hasOne(Kyc, { foreignKey: 'userId', as: 'kyc' });
+Kyc.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
+Kyc.belongsTo(User, { as: 'creator', foreignKey: 'createdBy' });
+Kyc.belongsTo(User, { as: 'updater', foreignKey: 'updatedBy' });
+Kyc.belongsTo(User, { as: 'reviewer', foreignKey: 'reviewedBy' });
+
 module.exports = {
   sequelize,
   User,
   Role,
   Module,
-  RolePermission
+  RolePermission,
+  Kyc
 };

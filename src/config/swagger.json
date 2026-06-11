@@ -963,6 +963,155 @@
           "403": { "description": "Access denied" }
         }
       }
+    },
+    "/panel/kyc": {
+      "get": {
+        "summary": "Get my KYC data",
+        "description": "Returns the current user's KYC record and status.",
+        "tags": ["User Panel - KYC"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "KYC data retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "kyc": { "type": "object" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Submit full KYC",
+        "description": "Submit all KYC data and files in a single multipart/form-data request. Includes personal info, identity document, selfie, and address proof.",
+        "tags": ["User Panel - KYC"],
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["fullName", "dateOfBirth", "country", "email", "phone", "streetAddress", "city", "postalCode", "idDocType", "idDocNumber", "idExpiryDate", "idCountryOfIssue", "idFrontImage", "selfieImage", "addressDocType", "addressDocIssueDate", "addressDocImage"],
+                "properties": {
+                  "fullName": { "type": "string", "example": "Aarav Mehta" },
+                  "dateOfBirth": { "type": "string", "format": "date", "example": "1995-03-15" },
+                  "country": { "type": "string", "example": "India" },
+                  "email": { "type": "string", "format": "email", "example": "aarav@example.com" },
+                  "phoneCode": { "type": "string", "example": "+91" },
+                  "phone": { "type": "string", "example": "9876543210" },
+                  "streetAddress": { "type": "string", "example": "123 Main Street" },
+                  "city": { "type": "string", "example": "Mumbai" },
+                  "postalCode": { "type": "string", "example": "400001" },
+                  "idDocType": { "type": "string", "enum": ["passport", "national_id", "driving_license"], "example": "passport" },
+                  "idFrontImage": { "type": "string", "format": "binary" },
+                  "idBackImage": { "type": "string", "format": "binary", "description": "Required for national_id and driving_license" },
+                  "idDocNumber": { "type": "string", "example": "A12345678" },
+                  "idExpiryDate": { "type": "string", "format": "date", "example": "2030-12-31" },
+                  "idCountryOfIssue": { "type": "string", "example": "India" },
+                  "selfieImage": { "type": "string", "format": "binary" },
+                  "addressDocType": { "type": "string", "enum": ["utility_bill", "bank_statement", "rent_agreement"], "example": "utility_bill" },
+                  "addressDocImage": { "type": "string", "format": "binary" },
+                  "addressDocIssueDate": { "type": "string", "format": "date", "example": "2026-05-01" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "KYC submitted successfully" },
+          "400": { "description": "Missing required fields or validation error" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Access denied" }
+        }
+      }
+    },
+    "/kyc": {
+      "get": {
+        "summary": "List all KYC submissions (Admin)",
+        "description": "Returns all KYC records. Filter by status using query param.",
+        "tags": ["Admin - KYC Management"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["draft", "pending", "approved", "rejected"] }, "description": "Filter by KYC status" }
+        ],
+        "responses": {
+          "200": { "description": "KYC list retrieved" },
+          "403": { "description": "Forbidden" }
+        }
+      }
+    },
+    "/kyc/{id}": {
+      "get": {
+        "summary": "Get KYC details (Admin)",
+        "description": "Returns full KYC details for a specific record including user info and all uploaded documents.",
+        "tags": ["Admin - KYC Management"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "KYC details retrieved" },
+          "404": { "description": "KYC not found" }
+        }
+      }
+    },
+    "/kyc/{id}/approve": {
+      "put": {
+        "summary": "Approve KYC (Admin)",
+        "description": "Marks a KYC submission as approved.",
+        "tags": ["Admin - KYC Management"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "KYC approved successfully" },
+          "400": { "description": "Already approved" },
+          "404": { "description": "KYC not found" }
+        }
+      }
+    },
+    "/kyc/{id}/reject": {
+      "put": {
+        "summary": "Reject KYC (Admin)",
+        "description": "Rejects a KYC submission with a reason. User can resubmit.",
+        "tags": ["Admin - KYC Management"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["reason"],
+                "properties": {
+                  "reason": { "type": "string", "example": "Document is blurry. Please reupload a clearer photo." }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "KYC rejected" },
+          "400": { "description": "Reason is required" },
+          "404": { "description": "KYC not found" }
+        }
+      }
     }
   }
 }

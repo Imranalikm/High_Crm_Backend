@@ -1,4 +1,4 @@
-const { User, Role, RolePermission, Module } = require('../models');
+const { User, Role, RolePermission, Module, Kyc } = require('../models');
 const { generateAccessToken, generateRefreshToken, verifyRefreshToken } = require('../utils/jwt.helper');
 const { sendOtpEmail } = require('../utils/email.helper');
 const bcrypt = require('bcryptjs');
@@ -54,6 +54,18 @@ async function register(req, res, next) {
     // Send OTP email (non-blocking — don't fail registration if email fails)
     sendOtpEmail(user.email, otpCode).catch(err => {
       console.error(`[Register] Failed to send OTP email to ${user.email}:`, err.message);
+    });
+
+    // Create blank KYC draft pre-filled with registration data
+    await Kyc.create({
+      userId: user.id,
+      fullName: name,
+      email,
+      phone,
+      country,
+      status: 'draft',
+      createdBy: user.id,
+      updatedBy: user.id
     });
 
     // Fetch user with role info
