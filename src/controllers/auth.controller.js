@@ -39,6 +39,23 @@ async function register(req, res, next) {
       updatedBy: user.id
     });
 
+    // Generate and send OTP for email verification
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const salt = await bcrypt.genSalt(10);
+    const hashedOtp = await bcrypt.hash(otpCode, salt);
+    const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+    await user.update({
+      otp: hashedOtp,
+      otpExpiresAt,
+      lastOtpSentAt: new Date()
+    });
+
+    // Send OTP email (non-blocking — don't fail registration if email fails)
+    sendOtpEmail(user.email, otpCode).catch(err => {
+      console.error(`[Register] Failed to send OTP email to ${user.email}:`, err.message);
+    });
+
     // Fetch user with role info
     const userWithRole = await User.findByPk(user.id, {
       include: [{ model: Role, as: 'role' }]
@@ -49,7 +66,7 @@ async function register(req, res, next) {
 
     return res.status(201).json({
       success: true,
-      message: 'Registration successful. Account status is pending email/OTP verification.',
+      message: 'Registration successful. OTP has been sent to your email for verification.',
       data: {
         accessToken,
         refreshToken,
