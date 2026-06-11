@@ -1003,14 +1003,14 @@
             "multipart/form-data": {
               "schema": {
                 "type": "object",
-                "required": ["fullName", "dateOfBirth", "country", "email", "phone", "streetAddress", "city", "postalCode", "idDocType", "idDocNumber", "idExpiryDate", "idCountryOfIssue", "idFrontImage", "selfieImage", "addressDocType", "addressDocIssueDate", "addressDocImage"],
+                "required": ["dateOfBirth", "streetAddress", "city", "postalCode", "idDocType", "idDocNumber", "idExpiryDate", "idCountryOfIssue", "idFrontImage", "selfieImage", "addressDocType", "addressDocIssueDate", "addressDocImage"],
                 "properties": {
-                  "fullName": { "type": "string", "example": "Aarav Mehta" },
+                  "fullName": { "type": "string", "example": "Aarav Mehta", "description": "Optional — pre-filled from registration" },
                   "dateOfBirth": { "type": "string", "format": "date", "example": "1995-03-15" },
-                  "country": { "type": "string", "example": "India" },
-                  "email": { "type": "string", "format": "email", "example": "aarav@example.com" },
+                  "country": { "type": "string", "example": "India", "description": "Optional — pre-filled from registration" },
+                  "email": { "type": "string", "format": "email", "example": "aarav@example.com", "description": "Optional — pre-filled from registration" },
                   "phoneCode": { "type": "string", "example": "+91" },
-                  "phone": { "type": "string", "example": "9876543210" },
+                  "phone": { "type": "string", "example": "9876543210", "description": "Optional — pre-filled from registration" },
                   "streetAddress": { "type": "string", "example": "123 Main Street" },
                   "city": { "type": "string", "example": "Mumbai" },
                   "postalCode": { "type": "string", "example": "400001" },
