@@ -6,6 +6,8 @@ const bcrypt = require('bcryptjs');
 /**
  * Register a new user
  */
+
+
 async function register(req, res, next) {
   try {
     const { name, email, password, country, phone } = req.body;
@@ -32,7 +34,7 @@ async function register(req, res, next) {
       roleId,
       status: 'pending'
     });
-
+          
     // Self audit update (User ID is now integer)
     await user.update({
       createdBy: user.id,

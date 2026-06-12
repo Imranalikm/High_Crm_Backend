@@ -96,6 +96,42 @@
             }
           }
         }
+      },
+      "NormalUser": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "example": 5 },
+          "name": { "type": "string", "example": "John Doe" },
+          "email": { "type": "string", "format": "email", "example": "johndoe@example.com" },
+          "country": { "type": "string", "nullable": true, "example": "India" },
+          "phone": { "type": "string", "nullable": true, "example": "+919876543210" },
+          "status": { "type": "string", "enum": ["active", "pending", "blocked"], "example": "active" },
+          "wallet_balance": { "type": "string", "example": "0" },
+          "lb_name": { "type": "string", "nullable": true, "example": "Mumbai Branch" },
+          "isIB": { "type": "boolean", "example": false },
+          "role": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "id": { "type": "string", "format": "uuid" },
+              "name": { "type": "string", "example": "User" },
+              "key": { "type": "string", "example": "user" }
+            }
+          },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" },
+          "createdBy": { "type": "string", "nullable": true, "example": "Super Admin" },
+          "updatedBy": { "type": "string", "nullable": true, "example": "Super Admin" }
+        }
+      },
+      "Pagination": {
+        "type": "object",
+        "properties": {
+          "total": { "type": "integer", "example": 50 },
+          "page": { "type": "integer", "example": 1 },
+          "limit": { "type": "integer", "example": 10 },
+          "totalPages": { "type": "integer", "example": 5 }
+        }
       }
     }
   },
