@@ -1147,6 +1147,284 @@
           "404": { "description": "KYC not found" }
         }
       }
+    },
+    "/user-management": {
+      "get": {
+        "summary": "Get all normal users",
+        "description": "Returns a paginated list of all normal users (users whose role type is 'user'). Supports search by name/email/phone and filtering by status. Requires user_management.view permission.",
+        "tags": ["User Management"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": { "type": "integer", "default": 1 },
+            "description": "Page number (1-indexed)"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "default": 10 },
+            "description": "Number of users per page"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Search by name, email, or phone"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["active", "pending", "blocked"] },
+            "description": "Filter by user status"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Users retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "users": {
+                          "type": "array",
+                          "items": { "$ref": "#/components/schemas/NormalUser" }
+                        },
+                        "pagination": { "$ref": "#/components/schemas/Pagination" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "403": { "description": "Forbidden - Missing user_management view permission", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      },
+      "post": {
+        "summary": "Add a new normal user",
+        "description": "Creates a new normal user with the same fields as the signup flow. Automatically assigns the default 'user' role, sends an OTP verification email, and creates a blank KYC draft. Requires user_management.create permission.",
+        "tags": ["User Management"],
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "email", "password"],
+                "properties": {
+                  "name": { "type": "string", "example": "Aarav Mehta" },
+                  "email": { "type": "string", "format": "email", "example": "aarav@example.com" },
+                  "password": { "type": "string", "example": "SecurePass123!", "minLength": 6 },
+                  "country": { "type": "string", "example": "India" },
+                  "phone": { "type": "string", "example": "+919876543210" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User created successfully. OTP sent to their email.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "message": { "type": "string", "example": "User created successfully. OTP has been sent to their email for verification." },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "integer", "example": 5 },
+                        "name": { "type": "string", "example": "Aarav Mehta" },
+                        "email": { "type": "string", "example": "aarav@example.com" },
+                        "country": { "type": "string", "example": "India" },
+                        "phone": { "type": "string", "example": "+919876543210" },
+                        "status": { "type": "string", "example": "pending" },
+                        "roleId": { "type": "string", "format": "uuid" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Validation error - Name, email, and password are required", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "403": { "description": "Forbidden - Missing user_management create permission", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "409": { "description": "A user with this email already exists", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "500": { "description": "Default user role not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/user-management/{id}": {
+      "get": {
+        "summary": "Get user details by ID",
+        "description": "Returns full details of a specific normal user including their KYC status. Requires user_management.view permission.",
+        "tags": ["User Management"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" }, "description": "User ID" }
+        ],
+        "responses": {
+          "200": {
+            "description": "User details retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": {
+                      "allOf": [
+                        { "$ref": "#/components/schemas/NormalUser" },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "kyc": {
+                              "type": "object",
+                              "nullable": true,
+                              "properties": {
+                                "id": { "type": "string", "format": "uuid" },
+                                "status": { "type": "string", "enum": ["draft", "pending", "approved", "rejected"], "example": "draft" },
+                                "fullName": { "type": "string", "example": "Aarav Mehta" },
+                                "email": { "type": "string", "example": "aarav@example.com" },
+                                "phone": { "type": "string", "example": "+919876543210" },
+                                "country": { "type": "string", "example": "India" }
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "404": { "description": "User not found or is not a normal user", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      },
+      "put": {
+        "summary": "Edit a normal user",
+        "description": "Updates details of a normal user. Only users with role type 'user' can be edited via this endpoint. Checks email uniqueness if email is being changed. Requires user_management.edit permission.",
+        "tags": ["User Management"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" }, "description": "User ID" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string", "example": "Aarav Mehta Updated" },
+                  "email": { "type": "string", "format": "email", "example": "aarav.new@example.com" },
+                  "password": { "type": "string", "example": "NewSecurePass456!", "description": "If provided, password will be re-hashed" },
+                  "country": { "type": "string", "example": "UAE" },
+                  "phone": { "type": "string", "example": "+971501234567" },
+                  "lb_name": { "type": "string", "example": "Dubai Branch" },
+                  "isIB": { "type": "boolean", "example": true },
+                  "wallet_balance": { "type": "string", "example": "5000" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "message": { "type": "string", "example": "User updated successfully." },
+                    "data": { "$ref": "#/components/schemas/NormalUser" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "403": { "description": "Forbidden - Not a normal user or missing permission", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "404": { "description": "User not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "409": { "description": "Email already taken by another user", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/user-management/{id}/block": {
+      "patch": {
+        "summary": "Block or unblock a normal user",
+        "description": "Toggles a normal user's status between 'active' and 'blocked'. Send action: 'block' to block or action: 'unblock' to reactivate. Requires user_management.edit permission.",
+        "tags": ["User Management"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" }, "description": "User ID" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["action"],
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": ["block", "unblock"],
+                    "example": "block",
+                    "description": "Use 'block' to block the user or 'unblock' to reactivate"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User blocked/unblocked successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "message": { "type": "string", "example": "User blocked successfully." },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "integer", "example": 5 },
+                        "name": { "type": "string", "example": "Aarav Mehta" },
+                        "email": { "type": "string", "example": "aarav@example.com" },
+                        "status": { "type": "string", "enum": ["active", "blocked"], "example": "blocked" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Invalid action or user already in target state", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "403": { "description": "Forbidden - Not a normal user or missing permission", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "404": { "description": "User not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
     }
   }
 }
