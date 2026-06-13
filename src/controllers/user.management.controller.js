@@ -46,7 +46,7 @@ async function getAllUsers(req, res, next) {
         },
         { model: User, as: 'creator', attributes: ['id', 'name'] },
         { model: User, as: 'updater', attributes: ['id', 'name'] },
-        { model: Kyc, as: 'kyc', attributes: ['selfieImage'] }
+        { model: Kyc, as: 'kyc', attributes: ['status', 'selfieImage'] }
       ],
       order: [['createdAt', 'DESC']],
       limit: parseInt(limit),
@@ -69,7 +69,8 @@ async function getAllUsers(req, res, next) {
       updatedAt: user.updatedAt,
       createdBy: user.creator ? user.creator.name : null,
       updatedBy: user.updater ? user.updater.name : null,
-      avatar: user.kyc && user.kyc.length > 0 ? user.kyc[0].selfieImage : (user.kyc ? user.kyc.selfieImage : null)
+      avatar: user.kyc && user.kyc.length > 0 ? user.kyc[0].selfieImage : (user.kyc ? user.kyc.selfieImage : null),
+      kyc: user.kyc ? { status: user.kyc.status } : null
     }));
 
     return res.status(200).json({
