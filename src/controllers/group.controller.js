@@ -9,7 +9,7 @@ const fetchAndStoreMt5Groups = async (req, res, next) => {
   try {
     const token = await getToken();
 
-    let response = await axios.post(`${process.env.EXTERNAL_API_BASE_URL}/Home/groupInfo`, { groupName: '*' }, {
+    let response = await axios.get(`${process.env.EXTERNAL_API_BASE_URL}/Home/groupInfo/*`, {
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
@@ -29,7 +29,7 @@ const fetchAndStoreMt5Groups = async (req, res, next) => {
       await connectManager(token);
       
       // Retry fetching groups
-      response = await axios.post(`${process.env.EXTERNAL_API_BASE_URL}/Home/groupInfo`, { groupName: '*' }, {
+      response = await axios.get(`${process.env.EXTERNAL_API_BASE_URL}/Home/groupInfo/*`, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
