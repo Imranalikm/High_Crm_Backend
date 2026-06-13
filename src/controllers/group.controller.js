@@ -18,11 +18,12 @@ const fetchAndStoreMt5Groups = async (req, res, next) => {
 
     let { groupDeatails, message } = response.data;
 
-    // Check if manager is not connected
-    const isManagerNotConnected = 
-      message === 'Manager is not connected' || 
-      (typeof response.data === 'string' && response.data.includes('Manager is not connected')) ||
-      (response.data?.error && response.data?.error?.includes('Manager is not connected'));
+    // Check if manager is not connected (case-insensitive)
+    const responseDataStr = typeof response.data === 'string' 
+      ? response.data.toLowerCase() 
+      : JSON.stringify(response.data || {}).toLowerCase();
+      
+    const isManagerNotConnected = responseDataStr.includes('manager is not connected');
 
     if (isManagerNotConnected) {
       console.log('Manager not connected. Attempting login...');
