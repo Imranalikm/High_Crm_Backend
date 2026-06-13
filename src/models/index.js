@@ -4,6 +4,7 @@ const Role = require('./Role');
 const Module = require('./Module');
 const RolePermission = require('./RolePermission');
 const Kyc = require('./Kyc');
+const Mt5Group = require('./Mt5Group');
 
 // User <-> Role association
 User.belongsTo(Role, { foreignKey: 'roleId', as: 'role' });
@@ -44,5 +45,6 @@ module.exports = {
   Role,
   Module,
   RolePermission,
-  Kyc
+  Kyc,
+  Mt5Group
 };
