@@ -16,6 +16,8 @@ const fetchAndStoreMt5Groups = async (req, res, next) => {
       }
     });
 
+    console.log("🛠️ INITIAL MT5 API RESPONSE:", typeof response.data === 'string' ? response.data : JSON.stringify(response.data));
+
     let { groupDeatails, message } = response.data;
 
     // Check if manager is not connected (case-insensitive)
@@ -36,11 +38,24 @@ const fetchAndStoreMt5Groups = async (req, res, next) => {
           'Content-Type': 'application/json',
         }
       });
+      console.log("🛠️ RETRY MT5 API RESPONSE:", typeof response.data === 'string' ? response.data : JSON.stringify(response.data));
       groupDeatails = response.data.groupDeatails;
     }
 
     if (!groupDeatails || !Array.isArray(groupDeatails)) {
-      return res.status(400).json({ success: false, message: 'Invalid response format from external API' });
+      console.error("🚨 CRITICAL: Invalid format from MT5 API.");
+      console.error("🚨 EXPECTED { groupDeatails: [...] }");
+      console.error("🚨 RECEIVED DATA:", typeof response.data === 'string' ? response.data : JSON.stringify(response.data));
+      
+      // If the response is actually an array itself, try parsing it
+      if (Array.isArray(response.data)) {
+         groupDeatails = response.data;
+      } else if (response.data && Array.isArray(response.data.groupDetails)) {
+         // Check if they spelled it correctly with 'groupDetails'
+         groupDeatails = response.data.groupDetails;
+      } else {
+         return res.status(400).json({ success: false, message: 'Invalid response format from external API', debug: response.data });
+      }
     }
 
     const savedGroups = [];
