@@ -45,7 +45,8 @@ async function getAllUsers(req, res, next) {
           attributes: ['id', 'name', 'key', 'type']
         },
         { model: User, as: 'creator', attributes: ['id', 'name'] },
-        { model: User, as: 'updater', attributes: ['id', 'name'] }
+        { model: User, as: 'updater', attributes: ['id', 'name'] },
+        { model: Kyc, as: 'kyc', attributes: ['selfieImage'] }
       ],
       order: [['createdAt', 'DESC']],
       limit: parseInt(limit),
@@ -67,7 +68,8 @@ async function getAllUsers(req, res, next) {
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
       createdBy: user.creator ? user.creator.name : null,
-      updatedBy: user.updater ? user.updater.name : null
+      updatedBy: user.updater ? user.updater.name : null,
+      avatar: user.kyc && user.kyc.length > 0 ? user.kyc[0].selfieImage : (user.kyc ? user.kyc.selfieImage : null)
     }));
 
     return res.status(200).json({
@@ -104,7 +106,7 @@ async function getUserById(req, res, next) {
         },
         { model: User, as: 'creator', attributes: ['id', 'name'] },
         { model: User, as: 'updater', attributes: ['id', 'name'] },
-        { model: Kyc, as: 'kyc', attributes: ['id', 'status', 'fullName', 'email', 'phone', 'country'] }
+        { model: Kyc, as: 'kyc', attributes: ['id', 'status', 'fullName', 'email', 'phone', 'country', 'selfieImage'] }
       ]
     });
 
