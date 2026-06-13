@@ -18,7 +18,8 @@ const fetchAndStoreMt5Groups = async (req, res, next) => {
 
     console.log("🛠️ INITIAL MT5 API RESPONSE:", typeof response.data === 'string' ? response.data : JSON.stringify(response.data));
 
-    let { groupDeatails, message } = response.data;
+    let { groups, message } = response.data;
+    let groupDeatails = groups; // Map the 'groups' array to our variable
 
     // Check if manager is not connected (case-insensitive)
     const responseDataStr = typeof response.data === 'string' 
@@ -39,20 +40,17 @@ const fetchAndStoreMt5Groups = async (req, res, next) => {
         }
       });
       console.log("🛠️ RETRY MT5 API RESPONSE:", typeof response.data === 'string' ? response.data : JSON.stringify(response.data));
-      groupDeatails = response.data.groupDeatails;
+      groupDeatails = response.data.groups;
     }
 
     if (!groupDeatails || !Array.isArray(groupDeatails)) {
       console.error("🚨 CRITICAL: Invalid format from MT5 API.");
-      console.error("🚨 EXPECTED { groupDeatails: [...] }");
+      console.error("🚨 EXPECTED { groups: [...] }");
       console.error("🚨 RECEIVED DATA:", typeof response.data === 'string' ? response.data : JSON.stringify(response.data));
       
       // If the response is actually an array itself, try parsing it
       if (Array.isArray(response.data)) {
          groupDeatails = response.data;
-      } else if (response.data && Array.isArray(response.data.groupDetails)) {
-         // Check if they spelled it correctly with 'groupDetails'
-         groupDeatails = response.data.groupDetails;
       } else {
          return res.status(400).json({ success: false, message: 'Invalid response format from external API', debug: response.data });
       }
@@ -61,7 +59,7 @@ const fetchAndStoreMt5Groups = async (req, res, next) => {
     const savedGroups = [];
 
     for (const group of groupDeatails) {
-      const { groupName } = group;
+      const groupName = group.groupname; // API returns 'groupname' (lowercase)
 
       if (!groupName) continue;
 
