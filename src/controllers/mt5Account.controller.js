@@ -1,5 +1,5 @@
 const axios = require('axios');
-const { Mt5Account, User } = require('../models');
+const { Mt5Account, User, CrmGroup } = require('../models');
 const { getToken, connectManager } = require('../utils/tokenFetch');
 
 // Generate random password
@@ -68,8 +68,12 @@ const createMT5Account = async (req, res) => {
     // 1. Call MT5 API First
     const token = await getToken();
     const mt5Url = `${process.env.EXTERNAL_API_BASE_URL}/Home/createAccount`;
+    // Look up the CRM Group to get the mapped MT5 Group Name
+    const crmGroupRec = await CrmGroup.findOne({ where: { name: groupName } });
+    const mappedMt5GroupName = crmGroupRec && crmGroupRec.mt5GroupName ? crmGroupRec.mt5GroupName : groupName;
+
     const payload = {
-      groupName,
+      groupName: mappedMt5GroupName,
       name,
       email,
       phone,
