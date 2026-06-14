@@ -7,6 +7,7 @@ const userPanelRoutes = require('./user.panel.routes');
 const kycRoutes = require('./kyc.routes');
 const userManagementRoutes = require('./user.management.routes');
 const groupRoutes = require('./group.routes');
+const crmGroupRoutes = require('./crmGroup.routes');
 
 
 
@@ -17,6 +18,7 @@ router.use('/panel', userPanelRoutes);
 router.use('/kyc', kycRoutes);
 router.use('/user-management', userManagementRoutes);
 router.use('/groups', groupRoutes);
+router.use('/crm-groups', crmGroupRoutes);
 
 
 // Root API healthcheck endpoint
