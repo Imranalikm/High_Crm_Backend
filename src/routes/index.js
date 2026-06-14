@@ -8,6 +8,7 @@ const kycRoutes = require('./kyc.routes');
 const userManagementRoutes = require('./user.management.routes');
 const groupRoutes = require('./group.routes');
 const crmGroupRoutes = require('./crmGroup.routes');
+const mt5AccountRoutes = require('./mt5Account.routes');
 
 
 
@@ -19,6 +20,7 @@ router.use('/kyc', kycRoutes);
 router.use('/user-management', userManagementRoutes);
 router.use('/groups', groupRoutes);
 router.use('/crm-groups', crmGroupRoutes);
+router.use('/mt5-accounts', mt5AccountRoutes);
 
 
 // Root API healthcheck endpoint
