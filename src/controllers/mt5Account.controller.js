@@ -77,10 +77,10 @@ const createMT5Account = async (req, res) => {
         email,
         phone,
         country,
-        balance,
+        balance: parseFloat(balance) || 0,
         mPassword,
         iPassword,
-        leverage,
+        leverage: parseInt(String(leverage).split(':').pop()) || 100,
       },
       {
         headers: {
