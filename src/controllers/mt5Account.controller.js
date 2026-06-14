@@ -1,6 +1,6 @@
 const axios = require('axios');
 const { Mt5Account, User } = require('../models');
-const { getToken } = require('../utils/tokenFetch');
+const { getToken, connectManager } = require('../utils/tokenFetch');
 
 // Generate random password
 function generateRandomPassword(length = 10) {
@@ -68,26 +68,34 @@ const createMT5Account = async (req, res) => {
     // 1. Call MT5 API First
     const token = await getToken();
     const mt5Url = `${process.env.EXTERNAL_API_BASE_URL}/Home/createAccount`;
+    const payload = {
+      groupName,
+      name,
+      email,
+      phone,
+      country,
+      balance: parseFloat(balance) || 0,
+      mPassword,
+      iPassword,
+      leverage: parseInt(String(leverage).split(':').pop()) || 100,
+    };
     
-    const response = await axios.post(
-      mt5Url,
-      {
-        groupName,
-        name,
-        email,
-        phone,
-        country,
-        balance: parseFloat(balance) || 0,
-        mPassword,
-        iPassword,
-        leverage: parseInt(String(leverage).split(':').pop()) || 100,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+    let response;
+    try {
+      response = await axios.post(mt5Url, payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch (err) {
+      if (err.response && JSON.stringify(err.response.data).toLowerCase().includes('manager is not connected')) {
+        console.log('Manager not connected. Attempting login...');
+        await connectManager(token);
+        response = await axios.post(mt5Url, payload, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } else {
+        throw err;
       }
-    );
+    }
 
     if (response.data.message !== 'MT_RET_OK') {
       return res.status(500).json({
