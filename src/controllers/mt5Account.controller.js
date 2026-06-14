@@ -65,7 +65,27 @@ const createMT5Account = async (req, res) => {
       balance = req.user.wallet_balance || 0;
     }
     
-    // 1. Call MT5 API First
+    // 1. Save to Database FIRST in PENDING state
+    let savedAccount;
+    try {
+      savedAccount = await Mt5Account.create({
+        accountid: `PENDING-${Date.now()}`,
+        userId: userId,
+        groupName: groupName,
+        leverage: leverage,
+        balance: balance,
+        mPassword: mPassword,
+        iPassword: iPassword,
+        createdBy: req.user.id,
+        status: 'PENDING',
+        server: 'MT5-LIVE-EU1'
+      });
+    } catch (dbErr) {
+      console.error('Failed to create initial DB record:', dbErr.message);
+      return res.status(500).json({ success: false, message: 'Database failure before contacting MT5.' });
+    }
+
+    // 2. Call MT5 API
     const token = await getToken();
     const mt5Url = `${process.env.EXTERNAL_API_BASE_URL}/Home/createAccount`;
     // Look up the CRM Group to get the mapped MT5 Group Name
@@ -97,13 +117,15 @@ const createMT5Account = async (req, res) => {
           headers: { Authorization: `Bearer ${token}` },
         });
       } else {
+        await savedAccount.update({ status: 'FAILED' });
         throw err;
       }
     }
 
     console.log('🛠️ MT5 GATEWAY RESPONSE DATA:', response.data);
 
-    if (response.data.message !== 'MT_RET_OK') {
+    if (response.data.message !== 'MT_RET_OK' && response.data.message !== 0) {
+      await savedAccount.update({ status: 'FAILED' });
       return res.status(500).json({
         success: false,
         message: 'MT5 account creation failed at gateway.',
@@ -117,6 +139,7 @@ const createMT5Account = async (req, res) => {
     const accountid = mt5Data.accountid || mt5Data.login;
 
     if (!accountid) {
+       await savedAccount.update({ status: 'FAILED' });
        return res.status(500).json({
         success: false,
         message: 'Account created in MT5 but no account ID returned.',
@@ -124,24 +147,16 @@ const createMT5Account = async (req, res) => {
       });
     }
 
-    // 2. Save to our Database
-    const saved = await Mt5Account.create({
+    // 3. Update Database with Real Account ID and LIVE status
+    await savedAccount.update({
       accountid: accountid.toString(),
-      userId: userId,
-      groupName: groupName,
-      leverage: leverage,
-      balance: balance,
-      mPassword: mPassword,
-      iPassword: iPassword,
-      createdBy: req.user.id,
-      status: 'LIVE',
-      server: 'MT5-LIVE-EU1'
+      status: 'LIVE'
     });
 
     return res.status(201).json({
       success: true,
       message: 'MT5 account created and stored successfully.',
-      data: saved,
+      data: savedAccount,
     });
 
   } catch (err) {
