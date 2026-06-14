@@ -131,6 +131,10 @@ const createMT5Account = async (req, res) => {
     });
 
   } catch (err) {
+    if (err.response) {
+      console.error('Error creating MT5 account. Gateway responded with 400:', err.response.data);
+      return res.status(500).json({ success: false, message: 'MT5 Gateway Error', details: err.response.data });
+    }
     console.error('Error creating MT5 account:', err.message);
     return res.status(500).json({ success: false, message: 'Internal Server Error' });
   }
