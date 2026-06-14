@@ -7,6 +7,7 @@ const Kyc = require('./Kyc');
 const Mt5Group = require('./Mt5Group');
 const CrmGroup = require('./CrmGroup');
 const Mt5Account = require('./Mt5Account');
+const Ticket = require('./Ticket');
 
 // User <-> Role association
 User.belongsTo(Role, { foreignKey: 'roleId', as: 'role' });
@@ -49,6 +50,10 @@ CrmGroup.belongsTo(User, { as: 'updater', foreignKey: 'updatedBy' });
 User.hasMany(Mt5Account, { foreignKey: 'userId', as: 'mt5Accounts' });
 Mt5Account.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
+// User <-> Ticket association
+User.hasMany(Ticket, { foreignKey: 'userId', as: 'tickets' });
+Ticket.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
 module.exports = {
   sequelize,
   User,
@@ -58,5 +63,6 @@ module.exports = {
   Kyc,
   Mt5Group,
   CrmGroup,
-  Mt5Account
+  Mt5Account,
+  Ticket
 };
