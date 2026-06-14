@@ -16,7 +16,7 @@ function generateRandomPassword(length = 10) {
 
 const createMT5Account = async (req, res) => {
   try {
-    const isAdmin = ['admin', 'subadmin'].includes(req.user?.role?.key || req.user?.role);
+    const isAdmin = req.user?.role?.type === 'admin';
 
     let groupName, leverage, mPassword, iPassword;
     let name, email, phone, country, balance, userId;
@@ -138,7 +138,7 @@ const createMT5Account = async (req, res) => {
 
 const getMT5Accounts = async (req, res) => {
   try {
-    const isAdmin = ['admin', 'subadmin'].includes(req.user?.role?.key || req.user?.role);
+    const isAdmin = req.user?.role?.type === 'admin';
 
     let whereClause = {};
     if (!isAdmin) {
