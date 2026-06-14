@@ -101,6 +101,8 @@ const createMT5Account = async (req, res) => {
       }
     }
 
+    console.log('🛠️ MT5 GATEWAY RESPONSE DATA:', response.data);
+
     if (response.data.message !== 'MT_RET_OK') {
       return res.status(500).json({
         success: false,
