@@ -83,5 +83,6 @@ module.exports = {
   CrmGroup,
   Mt5Account,
   Ticket,
-  Deposit
+  Deposit,
+  Withdrawal
 };
