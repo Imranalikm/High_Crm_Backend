@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const depositController = require('../controllers/deposit.controller');
-const authenticateToken = require('../middlewares/auth');
+const authenticateToken = require('../middlewares/auth.middleware');
 
 const { depositUpload } = require('../config/upload');
 
