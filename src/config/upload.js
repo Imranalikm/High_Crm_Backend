@@ -2,16 +2,19 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Ensure upload directory exists
-const uploadDir = path.join(process.cwd(), 'uploads', 'kyc');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
+const kycUploadDir = path.join(process.cwd(), 'uploads', 'kyc');
+const depositUploadDir = path.join(process.cwd(), 'uploads', 'deposits');
+if (!fs.existsSync(kycUploadDir)) {
+  fs.mkdirSync(kycUploadDir, { recursive: true });
+}
+if (!fs.existsSync(depositUploadDir)) {
+  fs.mkdirSync(depositUploadDir, { recursive: true });
 }
 
-// Storage config
-const storage = multer.diskStorage({
+// Storage config for KYC
+const kycStorage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, uploadDir);
+    cb(null, kycUploadDir);
   },
   filename: function (req, file, cb) {
     const userId = req.user ? req.user.id : 'unknown';
@@ -35,11 +38,36 @@ const fileFilter = (req, file, cb) => {
 
 // Multer instance for KYC uploads
 const kycUpload = multer({
-  storage,
+  storage: kycStorage,
   fileFilter,
   limits: {
     fileSize: 10 * 1024 * 1024 // 10MB max
   }
 });
 
-module.exports = kycUpload;
+// Storage config for Deposits
+const depositStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, depositUploadDir);
+  },
+  filename: function (req, file, cb) {
+    const userId = req.user ? req.user.id : 'unknown';
+    const timestamp = Date.now();
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `deposit_${userId}_${timestamp}${ext}`);
+  }
+});
+
+// Multer instance for Deposit uploads
+const depositUpload = multer({
+  storage: depositStorage,
+  fileFilter,
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB max
+  }
+});
+
+module.exports = {
+  kycUpload,
+  depositUpload
+};

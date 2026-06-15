@@ -8,6 +8,7 @@ const Mt5Group = require('./Mt5Group');
 const CrmGroup = require('./CrmGroup');
 const Mt5Account = require('./Mt5Account');
 const Ticket = require('./Ticket');
+const Deposit = require('./Deposit');
 
 // User <-> Role association
 User.belongsTo(Role, { foreignKey: 'roleId', as: 'role' });
@@ -54,6 +55,19 @@ Mt5Account.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 User.hasMany(Ticket, { foreignKey: 'userId', as: 'tickets' });
 Ticket.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
+// Deposit associations
+User.hasMany(Deposit, { foreignKey: 'createdBy', as: 'createdDeposits' });
+Deposit.belongsTo(User, { foreignKey: 'createdBy', as: 'creator' });
+
+User.hasMany(Deposit, { foreignKey: 'createdFor', as: 'receivedDeposits' });
+Deposit.belongsTo(User, { foreignKey: 'createdFor', as: 'recipient' });
+
+// Mt5Account <-> Deposit
+// The provided snippet queries Mt5Account by string `accountid` instead of PK.
+// But we can link them conceptually.
+Deposit.belongsTo(Mt5Account, { foreignKey: 'accountId', targetKey: 'accountid', as: 'mt5Account' });
+Mt5Account.hasMany(Deposit, { sourceKey: 'accountid', foreignKey: 'accountId', as: 'deposits' });
+
 module.exports = {
   sequelize,
   User,
@@ -64,5 +78,6 @@ module.exports = {
   Mt5Group,
   CrmGroup,
   Mt5Account,
-  Ticket
+  Ticket,
+  Deposit
 };
