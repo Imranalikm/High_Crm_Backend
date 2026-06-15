@@ -1,4 +1,4 @@
-const { User, Role, Module } = require('../models');
+const { User, Role, Module, Mt5Account } = require('../models');
 
 /**
  * Get user panel dashboard data
@@ -96,10 +96,19 @@ async function getWallet(req, res, next) {
       attributes: ['id', 'wallet_balance']
     });
 
+    const mt5Accounts = await Mt5Account.findAll({
+      where: { userId: req.user.id },
+      attributes: ['balance']
+    });
+
+    const walletBalance = user ? parseFloat(user.wallet_balance) || 0 : 0;
+    const mt5Balance = mt5Accounts.reduce((sum, acc) => sum + (parseFloat(acc.balance) || 0), 0);
+
     return res.status(200).json({
       success: true,
       data: {
-        wallet_balance: user ? user.wallet_balance : 0
+        wallet_balance: walletBalance,
+        portfolio_balance: walletBalance + mt5Balance
       }
     });
   } catch (error) {
