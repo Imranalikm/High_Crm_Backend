@@ -9,6 +9,7 @@ const CrmGroup = require('./CrmGroup');
 const Mt5Account = require('./Mt5Account');
 const Ticket = require('./Ticket');
 const Deposit = require('./Deposit');
+const Withdrawal = require('./Withdrawal');
 
 // User <-> Role association
 User.belongsTo(Role, { foreignKey: 'roleId', as: 'role' });
@@ -23,6 +24,9 @@ Module.hasMany(RolePermission, { foreignKey: 'moduleId', as: 'permissions', onDe
 
 // Auditing associations (createdBy and updatedBy)
 // All tables track which User created/updated the records
+
+Withdrawal.belongsTo(User, { as: 'creator', foreignKey: 'createdBy' });
+Withdrawal.belongsTo(User, { as: 'recipient', foreignKey: 'createdFor' });
 User.belongsTo(User, { as: 'creator', foreignKey: 'createdBy' });
 User.belongsTo(User, { as: 'updater', foreignKey: 'updatedBy' });
 
