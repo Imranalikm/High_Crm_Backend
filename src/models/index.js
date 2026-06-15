@@ -8,6 +8,7 @@ const Mt5Group = require('./Mt5Group');
 const CrmGroup = require('./CrmGroup');
 const Mt5Account = require('./Mt5Account');
 const Ticket = require('./Ticket');
+const TicketMessage = require('./TicketMessage');
 const Deposit = require('./Deposit');
 const Withdrawal = require('./Withdrawal');
 
@@ -59,6 +60,18 @@ Mt5Account.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 User.hasMany(Ticket, { foreignKey: 'userId', as: 'tickets' });
 Ticket.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
+// Ticket <-> Assigned Agent
+Ticket.belongsTo(User, { foreignKey: 'agentId', as: 'agent' });
+User.hasMany(Ticket, { foreignKey: 'agentId', as: 'assignedTickets' });
+
+// Ticket <-> TicketMessage
+Ticket.hasMany(TicketMessage, { foreignKey: 'ticketId', as: 'messages', onDelete: 'CASCADE' });
+TicketMessage.belongsTo(Ticket, { foreignKey: 'ticketId', as: 'ticket' });
+
+// User <-> TicketMessage
+TicketMessage.belongsTo(User, { foreignKey: 'authorId', as: 'author' });
+User.hasMany(TicketMessage, { foreignKey: 'authorId', as: 'ticketMessages' });
+
 // Deposit associations
 User.hasMany(Deposit, { foreignKey: 'createdBy', as: 'createdDeposits' });
 Deposit.belongsTo(User, { foreignKey: 'createdBy', as: 'creator' });
@@ -83,6 +96,7 @@ module.exports = {
   CrmGroup,
   Mt5Account,
   Ticket,
+  TicketMessage,
   Deposit,
   Withdrawal
 };

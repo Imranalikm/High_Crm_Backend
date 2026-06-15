@@ -47,7 +47,7 @@ const createWithdrawal = async (req, res) => {
         const mt5Url = `${process.env.EXTERNAL_API_BASE_URL}/Home/balanceOP`;
         const payload = {
           loginid: Number(accountId),
-          amount: -Math.abs(Number(amount)),
+          amount: Number(amount),
           txnType: 1, // 1 is for withdrawal
           description: note || '',
           comment: comment || '',
@@ -324,3 +324,4 @@ module.exports = {
   getWithdrawalById,
   getWithdrawalsByUserId
 };
+

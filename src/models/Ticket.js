@@ -20,6 +20,14 @@ const Ticket = sequelize.define('Ticket', {
       key: 'id'
     }
   },
+  agentId: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'users',
+      key: 'id'
+    }
+  },
   subject: {
     type: DataTypes.STRING,
     allowNull: false,
