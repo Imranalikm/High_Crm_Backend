@@ -58,13 +58,16 @@ const createWithdrawal = async (req, res) => {
           mt5Response = await axios.post(mt5Url, payload, {
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
           });
+          console.log('MT5 Server Response (Withdrawal):', mt5Response.data);
         } catch (err) {
           if (err.response && JSON.stringify(err.response.data).toLowerCase().includes('manager is not connected')) {
             await connectManager(token);
             mt5Response = await axios.post(mt5Url, payload, {
               headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
             });
+            console.log('MT5 Server Response after reconnect (Withdrawal):', mt5Response.data);
           } else {
+            console.error('MT5 Server Error (Withdrawal):', err.response?.data || err.message);
             throw err;
           }
         }
