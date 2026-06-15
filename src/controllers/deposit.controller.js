@@ -66,7 +66,7 @@ const createDeposit = async (req, res) => {
       {
         accountId: accountId.toString(),
         amount,
-        type:          isAdmin ? null : type,
+        type:          type,
         transactionId: !isAdmin && type === 'bank' ? transactionId : null,
         mt5DealId:     mt5DealId,
         note:          !isAdmin ? note || ''  : undefined,
@@ -198,6 +198,38 @@ const rejectDeposit = async (req, res) => {
   }
 };
 
+const flagDeposit = async (req, res) => {
+  if (req.user?.role?.type !== 'admin')
+    return res.status(403).json({ message: 'Only admins can flag deposits.' });
+
+  const { id } = req.params;
+  const { reason } = req.body || {};
+  const transaction = await sequelize.transaction();
+  try {
+    const deposit = await Deposit.findOne({ where: { id }, transaction });
+    if (!deposit) {
+      await transaction.rollback();
+      return res.status(404).json({ message: 'Deposit not found.' });
+    }
+    if (deposit.status !== 'pending') {
+      await transaction.rollback();
+      return res.status(400).json({ message: `Cannot flag a deposit that is already ${deposit.status}.` });
+    }
+
+    deposit.status = 'flagged';
+    if (reason) deposit.comment = reason;
+    await deposit.save({ transaction });
+
+    await transaction.commit();
+
+    res.json({ message: 'Deposit flagged.', deposit });
+  } catch (err) {
+    await transaction.rollback();
+    console.error('flagDeposit error:', err);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+};
+
 
 const getDepositsForAdmin = async (req, res) => {
   try {
@@ -243,6 +275,29 @@ const getDepositsForAdmin = async (req, res) => {
   }
 };
 
+
+const getDepositById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deposit = await Deposit.findOne({
+      where: { id },
+      include: [
+        { model: User, as: 'creator',   attributes: ['id', 'name', 'email'] },
+        { model: User, as: 'recipient', attributes: ['id', 'name', 'email'] },
+        { model: Mt5Account, as: 'mt5Account', attributes: ['groupName'] }
+      ],
+    });
+
+    if (!deposit) {
+      return res.status(404).json({ message: 'Deposit not found.' });
+    }
+
+    res.json({ success: true, data: deposit });
+  } catch (err) {
+    console.error('getDepositById error:', err);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+};
 
 /* ────────────────────────────────────────────────────────────
    LIST FOR A USER (self-service history)
@@ -292,6 +347,8 @@ module.exports = {
   createDeposit,
   approveDeposit,
   rejectDeposit,
+  flagDeposit,
   getDepositsForAdmin,
+  getDepositById,
   getDepositsByUserId
 };

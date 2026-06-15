@@ -13,7 +13,9 @@ router.get('/my-deposits', authenticateToken, depositController.getDepositsByUse
 
 // Admin endpoints
 router.get('/', authenticateToken, depositController.getDepositsForAdmin);
+router.get('/:id', authenticateToken, depositController.getDepositById);
 router.put('/:id/approve', authenticateToken, depositController.approveDeposit);
 router.put('/:id/reject', authenticateToken, depositController.rejectDeposit);
+router.put('/:id/flag', authenticateToken, depositController.flagDeposit);
 
 module.exports = router;
