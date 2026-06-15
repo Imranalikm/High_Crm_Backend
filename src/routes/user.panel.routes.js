@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { getDashboard, getProfile, updateProfile, getWallet } = require('../controllers/user.panel.controller');
 const { getMyKyc, submitKyc } = require('../controllers/kyc.controller');
-const kycUpload = require('../config/upload');
+const { kycUpload } = require('../config/upload');
 
 const authenticateToken = require('../middlewares/auth.middleware');
 const requireUserPanel = require('../middlewares/panel.middleware');
