@@ -35,11 +35,12 @@ const createDeposit = async (req, res) => {
     /* ── ADMIN: credit immediately ─────────────────────────── */
     if (isAdmin) {
       const token = await getToken();
-      await axios.post(
+      const mt5Response = await axios.post(
         `${process.env.EXTERNAL_API_BASE_URL}/Home/balanceOP`,
         { loginid: Number(accountId), amount: Number(amount), txnType: 0, description: note || '', comment: comment || '' },
         { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }
       );
+      console.log('🛠️ MT5 GATEWAY RESPONSE DATA (createDeposit):', mt5Response.data);
       mt5Account.balance = (parseFloat(mt5Account.balance) || 0) + Number(amount);
       await mt5Account.save({ transaction });
     }
@@ -72,7 +73,7 @@ const createDeposit = async (req, res) => {
     });
   } catch (err) {
     await transaction.rollback();
-    console.error('createDeposit error:', err);
+    console.error('createDeposit error:', err.response?.data || err.message || err);
     res.status(500).json({ message: 'Internal Server Error' });
   }
 };
@@ -105,11 +106,12 @@ const approveDeposit = async (req, res) => {
 
     /* External credit */
     const token = await getToken();
-    await axios.post(
+    const mt5Response = await axios.post(
       `${process.env.EXTERNAL_API_BASE_URL}/Home/balanceOP`,
       { loginid: Number(deposit.accountId), amount: Number(deposit.amount), txnType: 0, description: deposit.note || '', comment: deposit.comment || '' },
       { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }
     );
+    console.log('🛠️ MT5 GATEWAY RESPONSE DATA (approveDeposit):', mt5Response.data);
 
     mt5Account.balance = (parseFloat(mt5Account.balance) || 0) + Number(deposit.amount);
     await mt5Account.save({ transaction });
@@ -122,7 +124,7 @@ const approveDeposit = async (req, res) => {
     res.json({ message: 'Deposit approved and balance updated.', deposit });
   } catch (err) {
     await transaction.rollback();
-    console.error('approveDeposit error:', err);
+    console.error('approveDeposit error:', err.response?.data || err.message || err);
     res.status(500).json({ message: 'Internal Server Error' });
   }
 };
