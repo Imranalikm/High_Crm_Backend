@@ -33,6 +33,7 @@ const createDeposit = async (req, res) => {
     }
 
     /* ── ADMIN: credit immediately ─────────────────────────── */
+    let mt5DealId = null;
     if (isAdmin) {
       const token = await getToken();
       const mt5Url = `${process.env.EXTERNAL_API_BASE_URL}/Home/balanceOP`;
@@ -55,6 +56,7 @@ const createDeposit = async (req, res) => {
         }
       }
       console.log('🛠️ MT5 GATEWAY RESPONSE DATA (createDeposit):', mt5Response.data);
+      mt5DealId = mt5Response.data?.dealID ? String(mt5Response.data.dealID) : null;
       mt5Account.balance = (parseFloat(mt5Account.balance) || 0) + Number(amount);
       await mt5Account.save({ transaction });
     }
@@ -66,6 +68,7 @@ const createDeposit = async (req, res) => {
         amount,
         type:          isAdmin ? null : type,
         transactionId: !isAdmin && type === 'bank' ? transactionId : null,
+        mt5DealId:     mt5DealId,
         note:          !isAdmin ? note || ''  : undefined,
         comment:        isAdmin ? comment || '' : undefined,
         depositProof:  !isAdmin ? req.file?.path || '' : undefined,
@@ -145,6 +148,9 @@ const approveDeposit = async (req, res) => {
     await mt5Account.save({ transaction });
     
     deposit.status = 'approved';
+    if (mt5Response.data?.dealID) {
+      deposit.mt5DealId = String(mt5Response.data.dealID);
+    }
     await deposit.save({ transaction });
 
     await transaction.commit();

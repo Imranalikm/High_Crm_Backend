@@ -23,6 +23,10 @@ const Deposit = sequelize.define('Deposit', {
     type: DataTypes.STRING,
     allowNull: true
   },
+  mt5DealId: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
   note: {
     type: DataTypes.TEXT,
     allowNull: true
