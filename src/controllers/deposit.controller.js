@@ -1,6 +1,6 @@
 const axios = require('axios');
 const { Deposit, Mt5Account, User, sequelize } = require('../models');
-const { getToken } = require('../utils/tokenFetch');
+const { getToken, connectManager } = require('../utils/tokenFetch');
 const { Op } = require('sequelize');
 
 /* ────────────────────────────────────────────────────────────
@@ -35,11 +35,25 @@ const createDeposit = async (req, res) => {
     /* ── ADMIN: credit immediately ─────────────────────────── */
     if (isAdmin) {
       const token = await getToken();
-      const mt5Response = await axios.post(
-        `${process.env.EXTERNAL_API_BASE_URL}/Home/balanceOP`,
-        { loginid: Number(accountId), amount: Number(amount), txnType: 0, description: note || '', comment: comment || '' },
-        { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }
-      );
+      const mt5Url = `${process.env.EXTERNAL_API_BASE_URL}/Home/balanceOP`;
+      const payload = { loginid: Number(accountId), amount: Number(amount), txnType: 0, description: note || '', comment: comment || '' };
+      
+      let mt5Response;
+      try {
+        mt5Response = await axios.post(mt5Url, payload, {
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+        });
+      } catch (err) {
+        if (err.response && JSON.stringify(err.response.data).toLowerCase().includes('manager is not connected')) {
+          console.log('Manager not connected. Attempting login...');
+          await connectManager(token);
+          mt5Response = await axios.post(mt5Url, payload, {
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+          });
+        } else {
+          throw err;
+        }
+      }
       console.log('🛠️ MT5 GATEWAY RESPONSE DATA (createDeposit):', mt5Response.data);
       mt5Account.balance = (parseFloat(mt5Account.balance) || 0) + Number(amount);
       await mt5Account.save({ transaction });
@@ -106,11 +120,25 @@ const approveDeposit = async (req, res) => {
 
     /* External credit */
     const token = await getToken();
-    const mt5Response = await axios.post(
-      `${process.env.EXTERNAL_API_BASE_URL}/Home/balanceOP`,
-      { loginid: Number(deposit.accountId), amount: Number(deposit.amount), txnType: 0, description: deposit.note || '', comment: deposit.comment || '' },
-      { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }
-    );
+    const mt5Url = `${process.env.EXTERNAL_API_BASE_URL}/Home/balanceOP`;
+    const payload = { loginid: Number(deposit.accountId), amount: Number(deposit.amount), txnType: 0, description: deposit.note || '', comment: deposit.comment || '' };
+    
+    let mt5Response;
+    try {
+      mt5Response = await axios.post(mt5Url, payload, {
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+      });
+    } catch (err) {
+      if (err.response && JSON.stringify(err.response.data).toLowerCase().includes('manager is not connected')) {
+        console.log('Manager not connected. Attempting login...');
+        await connectManager(token);
+        mt5Response = await axios.post(mt5Url, payload, {
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+        });
+      } else {
+        throw err;
+      }
+    }
     console.log('🛠️ MT5 GATEWAY RESPONSE DATA (approveDeposit):', mt5Response.data);
 
     mt5Account.balance = (parseFloat(mt5Account.balance) || 0) + Number(deposit.amount);
