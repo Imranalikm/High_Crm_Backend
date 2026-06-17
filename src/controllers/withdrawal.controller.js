@@ -47,7 +47,7 @@ const createWithdrawal = async (req, res) => {
         const mt5Url = `${process.env.EXTERNAL_API_BASE_URL}/Home/balanceOP`;
         const payload = {
           loginid: Number(accountId),
-          amount: Number(amount),
+          amount: -Math.abs(Number(amount)),
           txnType: 0, 
           description: note || '',
           comment: comment || '',
@@ -145,8 +145,8 @@ const approveWithdrawal = async (req, res) => {
     const mt5Url = `${process.env.EXTERNAL_API_BASE_URL}/Home/balanceOP`;
     const payload = {
       loginid: Number(withdrawal.accountId),
-      amount: Number(withdrawal.amount),
-      txnType: 1, // withdrawal
+      amount: -Math.abs(Number(withdrawal.amount)),
+      txnType: 0,
       description: withdrawal.note || '',
       comment: '',
     };
