@@ -48,7 +48,7 @@ const createWithdrawal = async (req, res) => {
         const payload = {
           loginid: Number(accountId),
           amount: Number(amount),
-          txnType: 1, // 1 is for withdrawal
+          txnType: 0, 
           description: note || '',
           comment: comment || '',
         };
