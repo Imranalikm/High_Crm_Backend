@@ -44,18 +44,13 @@ const createMT5Account = async (req, res) => {
       iPassword = generateRandomPassword();
     } else {
       // It's a normal user
-      ({ groupName, leverage, mPassword, iPassword } = req.body);
-      if (!groupName || !leverage || !mPassword || !iPassword) {
-        return res.status(400).json({ success: false, message: 'Required user fields missing.' });
+      ({ groupName, leverage } = req.body);
+      if (!groupName || !leverage) {
+        return res.status(400).json({ success: false, message: 'Required user fields missing (groupName, leverage).' });
       }
 
-      const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*\W).{8,}$/;
-      if (!regex.test(mPassword) || !regex.test(iPassword)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Password does not meet complexity requirements.',
-        });
-      }
+      mPassword = generateRandomPassword();
+      iPassword = generateRandomPassword();
 
       userId = req.user.id;
       name = req.user.name;
