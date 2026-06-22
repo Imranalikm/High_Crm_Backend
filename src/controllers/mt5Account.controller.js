@@ -74,7 +74,7 @@ const createMT5Account = async (req, res) => {
         iPassword: iPassword,
         createdBy: req.user.id,
         status: 'PENDING',
-        server: 'MT5-LIVE-EU1'
+        server: 'Agile'
       });
     } catch (dbErr) {
       console.error('Failed to create initial DB record:', dbErr.message);
@@ -120,7 +120,14 @@ const createMT5Account = async (req, res) => {
 
     console.log('🛠️ MT5 GATEWAY RESPONSE DATA:', response.data);
 
-    if (response.data.message !== 'MT_RET_OK' && response.data.message !== 0) {
+    const isSuccess = 
+      response.data.retcode === 'MT_RET_OK' || 
+      response.data.retcode === 0 || 
+      response.data.message === 'MT_RET_OK' || 
+      response.data.message === 0 ||
+      response.data.message === 'User created successfully';
+
+    if (!isSuccess) {
       await savedAccount.update({ status: 'FAILED' });
       return res.status(500).json({
         success: false,
