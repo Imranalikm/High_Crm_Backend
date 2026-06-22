@@ -12,8 +12,7 @@ const mt5AccountRoutes = require('./mt5Account.routes');
 const ticketRoutes = require('./ticket.routes');
 const depositRoutes = require('./deposit.routes');
 const withdrawalRoutes = require('./withdrawal.routes');
-
-
+const notificationRoutes = require('./notification.routes');
 
 router.use('/auth', authRoutes);
 router.use('/roles', roleRoutes);
@@ -27,10 +26,9 @@ router.use('/mt5-accounts', mt5AccountRoutes);
 router.use('/tickets', ticketRoutes);
 router.use('/deposits', depositRoutes);
 router.use('/withdrawals', withdrawalRoutes);
-
+router.use('/notifications', notificationRoutes);
 
 // Root API healthcheck endpoint
-
 
 router.get('/health', (req, res) => {
   res.status(200).json({
@@ -39,6 +37,5 @@ router.get('/health', (req, res) => {
     timestamp: new Date()
   });
 });
-
 
 module.exports = router;

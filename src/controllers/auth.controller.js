@@ -1,6 +1,6 @@
 const { User, Role, RolePermission, Module, Kyc } = require('../models');
 const { generateAccessToken, generateRefreshToken, verifyRefreshToken } = require('../utils/jwt.helper');
-const { sendOtpEmail } = require('../utils/email.helper');
+const { sendOtpEmail, sendVerificationSuccessEmail } = require('../utils/email.helper');
 const bcrypt = require('bcryptjs');
 
 /**
@@ -282,6 +282,11 @@ async function verifyOTP(req, res, next) {
     }
 
     await user.update(updates);
+
+    // Send success email (non-blocking)
+    sendVerificationSuccessEmail(user.email, user.name).catch(err => {
+      console.error(`[VerifyOTP] Failed to send success email to ${user.email}:`, err.message);
+    });
 
     // Generate tokens
     const accessToken = generateAccessToken(user);

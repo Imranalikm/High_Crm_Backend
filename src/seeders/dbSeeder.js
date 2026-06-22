@@ -1,4 +1,4 @@
-const { User, Role, Module, RolePermission } = require('../models');
+const { User, Role, Module, RolePermission, NotificationSetting, NotificationTemplate } = require('../models');
 const { v4: uuidv4 } = require('uuid'); // We can use uuid or generate manually, but since we didn't add 'uuid' package, we can just generate a random UUID or use a static one. Let's use static UUIDs for predictability.
 
 const ADMIN_ID = 1;
@@ -197,6 +197,30 @@ async function seedDatabase() {
         }
       }
     }
+
+    // 6. Seed Notification Settings (Singleton)
+    console.log('[Seeder] Seeding notification settings...');
+    await NotificationSetting.findOrCreate({
+      where: { id: 1 },
+      defaults: {
+        emailEnabled: true,
+        smsEnabled: true,
+        inAppEnabled: true,
+        webhookEnabled: true,
+        pushEnabled: false,
+        emailProvider: 'SENDGRID',
+        smsProvider: 'TWILIO',
+        smtpHost: 'smtp.sendgrid.net',
+        smtpPort: '587',
+        fromEmail: 'noreply@smatams.com',
+        fromName: 'Smatams',
+        sendgridKey: 'SG.●●●●●●●●●●●●●',
+        twilioSid: 'AC●●●●●●●●',
+        twilioFrom: '+1555000000',
+        events: {}
+      },
+      transaction
+    });
 
     await transaction.commit();
     console.log('[Seeder] Seeding completed successfully!');

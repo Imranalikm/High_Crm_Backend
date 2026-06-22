@@ -1,6 +1,7 @@
 const axios = require('axios');
 const { Mt5Account, User, CrmGroup } = require('../models');
 const { getToken, connectManager } = require('../utils/tokenFetch');
+const { sendMt5CredentialsEmail } = require('../utils/email.helper');
 
 // Generate random password
 function generateRandomPassword(length = 10) {
@@ -146,6 +147,20 @@ const createMT5Account = async (req, res) => {
     await savedAccount.update({
       accountid: accountid.toString(),
       status: 'LIVE'
+    });
+
+    // Send MT5 account creation credentials email (non-blocking)
+    sendMt5CredentialsEmail(
+      email,
+      name,
+      accountid.toString(),
+      mPassword,
+      iPassword,
+      groupName,
+      leverage,
+      'MT5-LIVE-EU1'
+    ).catch(err => {
+      console.error(`[MT5 Create] Failed to send MT5 credentials email to ${email}:`, err.message);
     });
 
     return res.status(201).json({

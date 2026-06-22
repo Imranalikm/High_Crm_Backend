@@ -11,6 +11,8 @@ const Ticket = require('./Ticket');
 const TicketMessage = require('./TicketMessage');
 const Deposit = require('./Deposit');
 const Withdrawal = require('./Withdrawal');
+const NotificationSetting = require('./NotificationSetting');
+const NotificationTemplate = require('./NotificationTemplate');
 
 // User <-> Role association
 User.belongsTo(Role, { foreignKey: 'roleId', as: 'role' });
@@ -85,6 +87,11 @@ Deposit.belongsTo(User, { foreignKey: 'createdFor', as: 'recipient' });
 Deposit.belongsTo(Mt5Account, { foreignKey: 'accountId', targetKey: 'accountid', as: 'mt5Account' });
 Mt5Account.hasMany(Deposit, { sourceKey: 'accountid', foreignKey: 'accountId', as: 'deposits' });
 
+// Settings associations (optional audit logs)
+NotificationSetting.belongsTo(User, { as: 'updater', foreignKey: 'updatedBy' });
+NotificationTemplate.belongsTo(User, { as: 'creator', foreignKey: 'createdBy' });
+NotificationTemplate.belongsTo(User, { as: 'updater', foreignKey: 'updatedBy' });
+
 module.exports = {
   sequelize,
   User,
@@ -98,5 +105,7 @@ module.exports = {
   Ticket,
   TicketMessage,
   Deposit,
-  Withdrawal
+  Withdrawal,
+  NotificationSetting,
+  NotificationTemplate
 };
