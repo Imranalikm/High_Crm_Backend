@@ -2,7 +2,7 @@ const axios = require('axios');
 const { Op } = require('sequelize');
 const { Mt5Account, User, CrmGroup } = require('../models');
 const { getToken, connectManager } = require('../utils/tokenFetch');
-const { sendMt5CredentialsEmail } = require('../utils/email.helper');
+const { sendMt5CredentialsEmail, sendMt5PasswordUpdateEmail } = require('../utils/email.helper');
 
 
 // Generate random password
@@ -219,7 +219,99 @@ const getMT5Accounts = async (req, res) => {
   }
 };
 
+const updateMT5Password = async (req, res) => {
+  try {
+    const { accountid, mPassword, iPassword } = req.body;
+    
+    if (!accountid || !mPassword || !iPassword) {
+      return res.status(400).json({ success: false, message: 'Missing required fields (accountid, mPassword, iPassword).' });
+    }
+
+    const userId = req.user.id;
+    const account = await Mt5Account.findOne({
+      where: {
+        accountid: accountid.toString(),
+        userId: userId,
+        status: 'LIVE'
+      },
+      include: [{ model: User, as: 'user' }]
+    });
+
+    if (!account) {
+      return res.status(404).json({ success: false, message: 'Active MT5 account not found or does not belong to you.' });
+    }
+
+    // Call MT5 API
+    const token = await getToken();
+    const mt5Url = `${process.env.EXTERNAL_API_BASE_URL}/Home/updatePwd`;
+    
+    const payload = {
+      loginId: parseInt(accountid),
+      mPassword: mPassword,
+      iPassword: iPassword
+    };
+
+    let response;
+    try {
+      response = await axios.post(mt5Url, payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch (err) {
+      if (err.response && JSON.stringify(err.response.data).toLowerCase().includes('manager is not connected')) {
+        console.log('Manager not connected. Attempting login...');
+        await connectManager(token);
+        response = await axios.post(mt5Url, payload, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } else {
+        throw err;
+      }
+    }
+
+    const isSuccess = 
+      response.data.retcode === 'MT_RET_OK' || 
+      response.data.retcode === 0 || 
+      response.data.message === 'MT_RET_OK' || 
+      response.data.message === 0 ||
+      response.data.message?.toLowerCase().includes('success');
+
+    if (!isSuccess) {
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to update MT5 password at gateway.',
+        detail: response.data,
+      });
+    }
+
+    // Update DB
+    await account.update({
+      mPassword: mPassword,
+      iPassword: iPassword
+    });
+
+    // Send Email
+    const name = account.user ? account.user.name : req.user.name;
+    const email = account.user ? account.user.email : req.user.email;
+    sendMt5PasswordUpdateEmail(email, name, accountid, mPassword, iPassword).catch(err => {
+      console.error(`[MT5 Update Password] Failed to send email to ${email}:`, err.message);
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'MT5 password updated successfully.'
+    });
+  } catch (err) {
+    if (err.response) {
+      console.error('Error updating MT5 password. Gateway responded with 400:', err.response.data);
+      return res.status(500).json({ success: false, message: 'MT5 Gateway Error', details: err.response.data });
+    }
+    console.error('Error updating MT5 password:', err.message);
+    return res.status(500).json({ success: false, message: 'Internal Server Error' });
+  }
+};
+
 module.exports = {
   createMT5Account,
-  getMT5Accounts
+  getMT5Accounts,
+  updateMT5Password
 };

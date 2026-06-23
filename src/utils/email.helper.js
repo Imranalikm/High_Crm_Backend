@@ -395,10 +395,48 @@ async function sendPasswordResetEmail(toEmail, otp) {
   }
 }
 
+/**
+ * Send MT5 Password Update Email
+ * @param {string} toEmail - Recipient email
+ * @param {string} name - Recipient name
+ * @param {string} login - MT5 Account Login ID
+ * @param {string} mPassword - New Master Password
+ * @param {string} iPassword - New Investor Password
+ */
+async function sendMt5PasswordUpdateEmail(toEmail, name, login, mPassword, iPassword) {
+  const mailOptions = {
+    from: `"HighCRM" <${process.env.EMAIL_USER}>`,
+    to: toEmail,
+    subject: 'HighCRM - MT5 Passwords Updated',
+    html: `
+      <div style="font-family: 'Inter', sans-serif; color: #334155;">
+        <h2>MT5 Password Update</h2>
+        <p>Hello ${name || 'Trader'},</p>
+        <p>The passwords for your MT5 account <b>${login}</b> have been successfully updated.</p>
+        <div style="background-color: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0;">
+          <p style="margin: 0 0 8px 0;"><strong>Master Password:</strong> <span style="font-family: monospace; color: #ef4444;">${mPassword}</span></p>
+          <p style="margin: 0;"><strong>Investor Password:</strong> <span style="font-family: monospace;">${iPassword}</span></p>
+        </div>
+        <p>Please keep these credentials safe.</p>
+      </div>
+    `,
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`[Email] MT5 password update email sent to ${toEmail}. Message ID: ${info.messageId}`);
+    return true;
+  } catch (error) {
+    console.error(`[Email Error] Failed to send MT5 password update email to ${toEmail}:`, error.message);
+    return false;
+  }
+}
+
 module.exports = {
   sendOtpEmail,
   sendVerificationSuccessEmail,
   sendMt5CredentialsEmail,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  sendMt5PasswordUpdateEmail
 };
 
