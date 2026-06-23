@@ -371,9 +371,34 @@ async function sendMt5CredentialsEmail(toEmail, name, login, mPassword, iPasswor
   }
 }
 
+/**
+ * Send Password Reset OTP Email
+ * @param {string} toEmail - Recipient email
+ * @param {string} otp - The 6-digit reset code
+ */
+async function sendPasswordResetEmail(toEmail, otp) {
+  const mailOptions = {
+    from: `"HighCRM" <${process.env.EMAIL_USER}>`,
+    to: toEmail,
+    subject: 'HighCRM - Password Reset Code',
+    html: `<p>Your password reset code is <b>${otp}</b>. It is valid for 5 minutes. If you did not request this, please ignore this email.</p>`,
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`[Email] Password reset code sent to ${toEmail}. Message ID: ${info.messageId}`);
+    return true;
+  } catch (error) {
+    console.error(`[Email Error] Failed to send email to ${toEmail}:`, error.message);
+    console.log(`\n🔑 [DEVELOPMENT FALLBACK] >>> Password Reset OTP for ${toEmail} is: ${otp} <<<\n`);
+    return false;
+  }
+}
+
 module.exports = {
   sendOtpEmail,
   sendVerificationSuccessEmail,
-  sendMt5CredentialsEmail
+  sendMt5CredentialsEmail,
+  sendPasswordResetEmail
 };
 

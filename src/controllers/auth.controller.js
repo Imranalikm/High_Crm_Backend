@@ -1,6 +1,6 @@
 const { User, Role, RolePermission, Module, Kyc } = require('../models');
 const { generateAccessToken, generateRefreshToken, verifyRefreshToken } = require('../utils/jwt.helper');
-const { sendOtpEmail, sendVerificationSuccessEmail } = require('../utils/email.helper');
+const { sendOtpEmail, sendVerificationSuccessEmail, sendPasswordResetEmail } = require('../utils/email.helper');
 const bcrypt = require('bcryptjs');
 
 /**
@@ -450,11 +450,93 @@ async function getMe(req, res, next) {
   }
 }
 
+/**
+ * Forgot Password - Send OTP
+ */
+async function forgotPassword(req, res, next) {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Email address is required.' });
+    }
+
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'No account found with this email address.' });
+    }
+
+    if (user.status === 'blocked') {
+      return res.status(403).json({ success: false, message: 'Your account is blocked. Please contact support.' });
+    }
+
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const salt = await bcrypt.genSalt(10);
+    const hashedOtp = await bcrypt.hash(otpCode, salt);
+    const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 mins
+
+    await user.update({
+      otp: hashedOtp,
+      otpExpiresAt,
+      lastOtpSentAt: new Date()
+    });
+
+    await sendPasswordResetEmail(user.email, otpCode);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Password reset code has been sent to your email.'
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Reset Password - Verify OTP and update password
+ */
+async function resetPassword(req, res, next) {
+  try {
+    const { email, otp, newPassword } = req.body;
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({ success: false, message: 'Email, OTP, and new password are required.' });
+    }
+
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'No account found with this email address.' });
+    }
+
+    if (!user.otp || !user.otpExpiresAt || new Date() > user.otpExpiresAt) {
+      return res.status(400).json({ success: false, message: 'Reset code has expired or is invalid.' });
+    }
+
+    const isMatch = await bcrypt.compare(otp, user.otp);
+    if (!isMatch) {
+      return res.status(401).json({ success: false, message: 'Invalid reset code.' });
+    }
+
+    // Set new password, hook will hash it automatically
+    user.password = newPassword;
+    user.otp = null;
+    user.otpExpiresAt = null;
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Password reset successful. Please log in.'
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   register,
   login,
   sendOTP,
   verifyOTP,
   refresh,
-  getMe
+  getMe,
+  forgotPassword,
+  resetPassword
 };
