@@ -165,7 +165,7 @@ const createMT5Account = async (req, res) => {
       iPassword,
       groupName,
       leverage,
-      'MT5-LIVE-EU1'
+      'Agile'
     ).catch(err => {
       console.error(`[MT5 Create] Failed to send MT5 credentials email to ${email}:`, err.message);
     });
