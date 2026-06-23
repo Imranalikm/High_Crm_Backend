@@ -3,6 +3,7 @@ const { Mt5Account, User, CrmGroup } = require('../models');
 const { getToken, connectManager } = require('../utils/tokenFetch');
 const { sendMt5CredentialsEmail } = require('../utils/email.helper');
 
+
 // Generate random password
 function generateRandomPassword(length = 10) {
   const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+";
@@ -60,6 +61,8 @@ const createMT5Account = async (req, res) => {
       country = req.user.country || 'Unknown';
       balance = req.user.wallet_balance || 0;
     }
+
+    console.log('🔑 Generated Passwords - Master:', mPassword, 'Investor:', iPassword);
     
     // 1. Save to Database FIRST in PENDING state
     let savedAccount;
