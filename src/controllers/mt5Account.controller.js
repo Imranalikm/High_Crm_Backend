@@ -1,4 +1,5 @@
 const axios = require('axios');
+const { Op } = require('sequelize');
 const { Mt5Account, User, CrmGroup } = require('../models');
 const { getToken, connectManager } = require('../utils/tokenFetch');
 const { sendMt5CredentialsEmail } = require('../utils/email.helper');
@@ -196,6 +197,8 @@ const getMT5Accounts = async (req, res) => {
     let whereClause = {};
     if (!isAdmin) {
       whereClause.userId = req.user.id;
+      whereClause.status = 'LIVE';
+      whereClause.accountid = { [Op.notLike]: 'PENDING-%' };
     }
 
     const accounts = await Mt5Account.findAll({
