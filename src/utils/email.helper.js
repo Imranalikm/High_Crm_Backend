@@ -24,7 +24,9 @@ async function sendOtpEmail(toEmail, otp) {
     html: `
       <div style="font-family: 'Inter', sans-serif; color: #334155; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
         <div style="text-align: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #f1f5f9;">
-          <img src="cid:logo" alt="Smatams Logo" style="height: 40px; object-fit: contain;" />
+          <a href="https://account.smatams.com" target="_blank" style="text-decoration: none; border: none; outline: none; display: inline-block;">
+            <img src="cid:logo" alt="Smatams Logo" style="height: 40px; object-fit: contain; border: none;" />
+          </a>
         </div>
         <h2 style="color: #0f172a; margin-top: 0;">Email Verification</h2>
         <p style="font-size: 16px; line-height: 1.6;">Your OTP is <b style="font-size: 18px; color: #3b82f6;">${otp}</b>. It is valid for 5 minutes.</p>
@@ -34,7 +36,8 @@ async function sendOtpEmail(toEmail, otp) {
     attachments: [{
       filename: 'logo.png',
       path: path.join(__dirname, 'logo.png'),
-      cid: 'logo'
+      cid: 'logo',
+      contentDisposition: 'inline'
     }]
   };
 
@@ -144,7 +147,9 @@ async function sendVerificationSuccessEmail(toEmail, name) {
         <div class="wrapper">
           <div class="container">
             <div class="header">
-              <img src="cid:logo" alt="Smatams Logo" style="height: 40px; object-fit: contain; margin-bottom: 8px;" />
+              <a href="https://account.smatams.com" target="_blank" style="text-decoration: none; border: none; outline: none; display: inline-block; margin-bottom: 8px;">
+                <img src="cid:logo" alt="Smatams Logo" style="height: 40px; object-fit: contain; border: none;" />
+              </a>
               <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;">Smatams</h1>
             </div>
             <div class="content">
@@ -169,7 +174,8 @@ async function sendVerificationSuccessEmail(toEmail, name) {
     attachments: [{
       filename: 'logo.png',
       path: path.join(__dirname, 'logo.png'),
-      cid: 'logo'
+      cid: 'logo',
+      contentDisposition: 'inline'
     }]
   };
 
@@ -309,7 +315,9 @@ async function sendMt5CredentialsEmail(toEmail, name, login, mPassword, iPasswor
         <div class="wrapper">
           <div class="container">
             <div class="header">
-              <img src="cid:logo" alt="Smatams Logo" style="height: 40px; object-fit: contain; margin-bottom: 8px;" />
+              <a href="https://account.smatams.com" target="_blank" style="text-decoration: none; border: none; outline: none; display: inline-block; margin-bottom: 8px;">
+                <img src="cid:logo" alt="Smatams Logo" style="height: 40px; object-fit: contain; border: none;" />
+              </a>
               <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;">Smatams Trading</h1>
             </div>
             <div class="content">
@@ -370,7 +378,8 @@ async function sendMt5CredentialsEmail(toEmail, name, login, mPassword, iPasswor
     attachments: [{
       filename: 'logo.png',
       path: path.join(__dirname, 'logo.png'),
-      cid: 'logo'
+      cid: 'logo',
+      contentDisposition: 'inline'
     }]
   };
 
@@ -397,7 +406,9 @@ async function sendPasswordResetEmail(toEmail, otp) {
     html: `
       <div style="font-family: 'Inter', sans-serif; color: #334155; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
         <div style="text-align: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #f1f5f9;">
-          <img src="cid:logo" alt="Smatams Logo" style="height: 40px; object-fit: contain;" />
+          <a href="https://account.smatams.com" target="_blank" style="text-decoration: none; border: none; outline: none; display: inline-block;">
+            <img src="cid:logo" alt="Smatams Logo" style="height: 40px; object-fit: contain; border: none;" />
+          </a>
         </div>
         <h2 style="color: #0f172a; margin-top: 0;">Password Reset</h2>
         <p style="font-size: 16px; line-height: 1.6;">Your password reset code is <b style="font-size: 18px; color: #ef4444;">${otp}</b>. It is valid for 5 minutes.</p>
@@ -408,7 +419,8 @@ async function sendPasswordResetEmail(toEmail, otp) {
     attachments: [{
       filename: 'logo.png',
       path: path.join(__dirname, 'logo.png'),
-      cid: 'logo'
+      cid: 'logo',
+      contentDisposition: 'inline'
     }]
   };
 
@@ -439,7 +451,9 @@ async function sendMt5PasswordUpdateEmail(toEmail, name, login, mPassword, iPass
     html: `
       <div style="font-family: 'Inter', sans-serif; color: #334155; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
         <div style="text-align: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #f1f5f9;">
-          <img src="cid:logo" alt="Smatams Logo" style="height: 40px; object-fit: contain;" />
+          <a href="https://account.smatams.com" target="_blank" style="text-decoration: none; border: none; outline: none; display: inline-block;">
+            <img src="cid:logo" alt="Smatams Logo" style="height: 40px; object-fit: contain; border: none;" />
+          </a>
         </div>
         <h2 style="color: #0f172a; margin-top: 0;">MT5 Passwords Updated</h2>
         <p>Hello ${name || 'Trader'},</p>
@@ -455,7 +469,8 @@ async function sendMt5PasswordUpdateEmail(toEmail, name, login, mPassword, iPass
     attachments: [{
       filename: 'logo.png',
       path: path.join(__dirname, 'logo.png'),
-      cid: 'logo'
+      cid: 'logo',
+      contentDisposition: 'inline'
     }]
   };
 
