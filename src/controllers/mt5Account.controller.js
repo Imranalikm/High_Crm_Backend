@@ -104,25 +104,37 @@ const createMT5Account = async (req, res) => {
       leverage: parseInt(String(leverage).split(':').pop()) || 100,
     };
     
+    console.log('[MT5 API Request] URL:', mt5Url);
+    console.log('[MT5 API Request] Payload:', JSON.stringify(payload, null, 2));
+
     let response;
     try {
       response = await axios.post(mt5Url, payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      console.log('[MT5 API Response] Success Status:', response.status);
+      console.log('[MT5 API Response] Success Data:', JSON.stringify(response.data, null, 2));
     } catch (err) {
       if (err.response && JSON.stringify(err.response.data).toLowerCase().includes('manager is not connected')) {
         console.log('Manager not connected. Attempting login...');
         await connectManager(token);
+        console.log('[MT5 API Request retry] URL:', mt5Url);
         response = await axios.post(mt5Url, payload, {
           headers: { Authorization: `Bearer ${token}` },
         });
+        console.log('[MT5 API Response retry] Success Status:', response.status);
+        console.log('[MT5 API Response retry] Success Data:', JSON.stringify(response.data, null, 2));
       } else {
+        if (err.response) {
+          console.error('[MT5 API Error Response] Status:', err.response.status);
+          console.error('[MT5 API Error Response] Data:', JSON.stringify(err.response.data, null, 2));
+        } else {
+          console.error('[MT5 API Error Response] Message:', err.message);
+        }
         await savedAccount.update({ status: 'FAILED' });
         throw err;
       }
     }
-
-    console.log('🛠️ MT5 GATEWAY RESPONSE DATA:', response.data);
 
     const isSuccess = 
       response.data.retcode === 'MT_RET_OK' || 
