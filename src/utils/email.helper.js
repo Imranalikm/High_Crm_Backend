@@ -16,11 +16,21 @@ const transporter = nodemailer.createTransport({
  * @param {string} otp - The 6-digit verification code
  */
 async function sendOtpEmail(toEmail, otp) {
+  const portalUrl = process.env.CLIENT_PORTAL_URL || 'http://localhost:5173';
   const mailOptions = {
-    from: `"HighCRM" <${process.env.EMAIL_USER}>`,
+    from: `"Smatams" <${process.env.EMAIL_USER}>`,
     to: toEmail,
-    subject: 'HighCRM - Your OTP Code',
-    html: `<p>Your OTP is <b>${otp}</b>. It is valid for 5 minutes.</p>`,
+    subject: 'Smatams - Your OTP Code',
+    html: `
+      <div style="font-family: 'Inter', sans-serif; color: #334155; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+        <div style="text-align: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #f1f5f9;">
+          <img src="${portalUrl}/LOGO (1).png" alt="Smatams Logo" style="height: 40px; object-fit: contain;" />
+        </div>
+        <h2 style="color: #0f172a; margin-top: 0;">Email Verification</h2>
+        <p style="font-size: 16px; line-height: 1.6;">Your OTP is <b style="font-size: 18px; color: #3b82f6;">${otp}</b>. It is valid for 5 minutes.</p>
+        <p style="font-size: 13px; color: #94a3b8; margin-top: 24px; border-top: 1px solid #f1f5f9; padding-top: 16px;">&copy; ${new Date().getFullYear()} Smatams. All rights reserved.</p>
+      </div>
+    `,
   };
 
   try {
@@ -42,9 +52,9 @@ async function sendOtpEmail(toEmail, otp) {
 async function sendVerificationSuccessEmail(toEmail, name) {
   const portalUrl = process.env.CLIENT_PORTAL_URL || 'http://localhost:5173';
   const mailOptions = {
-    from: `"HighCRM" <${process.env.EMAIL_USER}>`,
+    from: `"Smatams" <${process.env.EMAIL_USER}>`,
     to: toEmail,
-    subject: 'HighCRM - Account Verified Successfully!',
+    subject: 'Smatams - Account Verified Successfully!',
     html: `
       <!DOCTYPE html>
       <html>
@@ -77,15 +87,8 @@ async function sendVerificationSuccessEmail(toEmail, name) {
           }
           .header {
             background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
-            padding: 32px;
+            padding: 24px;
             text-align: center;
-          }
-          .header h1 {
-            color: #ffffff;
-            margin: 0;
-            font-size: 24px;
-            font-weight: 700;
-            letter-spacing: -0.5px;
           }
           .content {
             padding: 40px 32px;
@@ -136,20 +139,21 @@ async function sendVerificationSuccessEmail(toEmail, name) {
         <div class="wrapper">
           <div class="container">
             <div class="header">
-              <h1>HighCRM</h1>
+              <img src="${portalUrl}/LOGO (1).png" alt="Smatams Logo" style="height: 40px; object-fit: contain; margin-bottom: 8px;" />
+              <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;">Smatams</h1>
             </div>
             <div class="content">
               <div class="success-icon">🎉</div>
               <h2>Verification Successful!</h2>
               <p>Hello ${name || 'Trader'},</p>
-              <p>Your email verification is complete, and your account has been successfully activated. You now have full access to our HighCRM client area and trading features.</p>
+              <p>Your email verification is complete, and your account has been successfully activated. You now have full access to our Smatams client area and trading features.</p>
               <p>Click the button below to log in and get started on your trading journey.</p>
               <div class="button-container">
                 <a href="${portalUrl}" class="btn" target="_blank">Access Client Portal</a>
               </div>
             </div>
             <div class="footer">
-              <p>&copy; ${new Date().getFullYear()} HighCRM. All rights reserved.</p>
+              <p>&copy; ${new Date().getFullYear()} Smatams. All rights reserved.</p>
               <p>If you did not register for this account, please contact our support team immediately.</p>
             </div>
           </div>
@@ -183,9 +187,9 @@ async function sendVerificationSuccessEmail(toEmail, name) {
 async function sendMt5CredentialsEmail(toEmail, name, login, mPassword, iPassword, groupName, leverage, server) {
   const portalUrl = process.env.CLIENT_PORTAL_URL || 'http://localhost:5173';
   const mailOptions = {
-    from: `"HighCRM" <${process.env.EMAIL_USER}>`,
+    from: `"Smatams" <${process.env.EMAIL_USER}>`,
     to: toEmail,
-    subject: 'HighCRM - Your MT5 Trading Account Credentials',
+    subject: 'Smatams - Your MT5 Trading Account Credentials',
     html: `
       <!DOCTYPE html>
       <html>
@@ -218,15 +222,8 @@ async function sendMt5CredentialsEmail(toEmail, name, login, mPassword, iPasswor
           }
           .header {
             background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            padding: 32px;
+            padding: 24px;
             text-align: center;
-          }
-          .header h1 {
-            color: #ffffff;
-            margin: 0;
-            font-size: 24px;
-            font-weight: 700;
-            letter-spacing: -0.5px;
           }
           .content {
             padding: 40px 32px;
@@ -302,7 +299,8 @@ async function sendMt5CredentialsEmail(toEmail, name, login, mPassword, iPasswor
         <div class="wrapper">
           <div class="container">
             <div class="header">
-              <h1>HighCRM Trading</h1>
+              <img src="${portalUrl}/LOGO (1).png" alt="Smatams Logo" style="height: 40px; object-fit: contain; margin-bottom: 8px;" />
+              <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;">Smatams Trading</h1>
             </div>
             <div class="content">
               <h2>Your MT5 Trading Account is Ready!</h2>
@@ -341,7 +339,7 @@ async function sendMt5CredentialsEmail(toEmail, name, login, mPassword, iPasswor
               </div>
 
               <div class="warning-box">
-                <p><strong>⚠️ Security Notice:</strong> The Master Password grants complete trading access to your account. Keep these credentials confidential. HighCRM staff will never ask for your passwords.</p>
+                <p><strong>⚠️ Security Notice:</strong> The Master Password grants complete trading access to your account. Keep these credentials confidential. Smatams staff will never ask for your passwords.</p>
               </div>
 
               <p>To start trading, download the MetaTrader 5 platform on your device and connect using the login details and server listed above.</p>
@@ -351,7 +349,7 @@ async function sendMt5CredentialsEmail(toEmail, name, login, mPassword, iPasswor
               </div>
             </div>
             <div class="footer">
-              <p>&copy; ${new Date().getFullYear()} HighCRM. All rights reserved.</p>
+              <p>&copy; ${new Date().getFullYear()} Smatams. All rights reserved.</p>
               <p>For assistance, please reply to this email or contact support in your client area.</p>
             </div>
           </div>
@@ -377,11 +375,22 @@ async function sendMt5CredentialsEmail(toEmail, name, login, mPassword, iPasswor
  * @param {string} otp - The 6-digit reset code
  */
 async function sendPasswordResetEmail(toEmail, otp) {
+  const portalUrl = process.env.CLIENT_PORTAL_URL || 'http://localhost:5173';
   const mailOptions = {
-    from: `"HighCRM" <${process.env.EMAIL_USER}>`,
+    from: `"Smatams" <${process.env.EMAIL_USER}>`,
     to: toEmail,
-    subject: 'HighCRM - Password Reset Code',
-    html: `<p>Your password reset code is <b>${otp}</b>. It is valid for 5 minutes. If you did not request this, please ignore this email.</p>`,
+    subject: 'Smatams - Password Reset Code',
+    html: `
+      <div style="font-family: 'Inter', sans-serif; color: #334155; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+        <div style="text-align: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #f1f5f9;">
+          <img src="${portalUrl}/LOGO (1).png" alt="Smatams Logo" style="height: 40px; object-fit: contain;" />
+        </div>
+        <h2 style="color: #0f172a; margin-top: 0;">Password Reset</h2>
+        <p style="font-size: 16px; line-height: 1.6;">Your password reset code is <b style="font-size: 18px; color: #ef4444;">${otp}</b>. It is valid for 5 minutes.</p>
+        <p style="font-size: 15px; line-height: 1.6; color: #64748b;">If you did not request this, please ignore this email.</p>
+        <p style="font-size: 13px; color: #94a3b8; margin-top: 24px; border-top: 1px solid #f1f5f9; padding-top: 16px;">&copy; ${new Date().getFullYear()} Smatams. All rights reserved.</p>
+      </div>
+    `,
   };
 
   try {
@@ -404,20 +413,25 @@ async function sendPasswordResetEmail(toEmail, otp) {
  * @param {string} iPassword - New Investor Password
  */
 async function sendMt5PasswordUpdateEmail(toEmail, name, login, mPassword, iPassword) {
+  const portalUrl = process.env.CLIENT_PORTAL_URL || 'http://localhost:5173';
   const mailOptions = {
-    from: `"HighCRM" <${process.env.EMAIL_USER}>`,
+    from: `"Smatams" <${process.env.EMAIL_USER}>`,
     to: toEmail,
-    subject: 'HighCRM - MT5 Passwords Updated',
+    subject: 'Smatams - MT5 Passwords Updated',
     html: `
-      <div style="font-family: 'Inter', sans-serif; color: #334155;">
-        <h2>MT5 Password Update</h2>
+      <div style="font-family: 'Inter', sans-serif; color: #334155; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+        <div style="text-align: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #f1f5f9;">
+          <img src="${portalUrl}/LOGO (1).png" alt="Smatams Logo" style="height: 40px; object-fit: contain;" />
+        </div>
+        <h2 style="color: #0f172a; margin-top: 0;">MT5 Passwords Updated</h2>
         <p>Hello ${name || 'Trader'},</p>
         <p>The passwords for your MT5 account <b>${login}</b> have been successfully updated.</p>
-        <div style="background-color: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0;">
-          <p style="margin: 0 0 8px 0;"><strong>Master Password:</strong> <span style="font-family: monospace; color: #ef4444;">${mPassword}</span></p>
-          <p style="margin: 0;"><strong>Investor Password:</strong> <span style="font-family: monospace;">${iPassword}</span></p>
+        <div style="background-color: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
+          <p style="margin: 0 0 8px 0;"><strong>Master Password:</strong> <span style="font-family: monospace; color: #ef4444; font-weight: bold;">${mPassword}</span></p>
+          <p style="margin: 0;"><strong>Investor Password:</strong> <span style="font-family: monospace; font-weight: bold;">${iPassword}</span></p>
         </div>
-        <p>Please keep these credentials safe.</p>
+        <p style="font-size: 15px; color: #64748b;">Please keep these credentials safe.</p>
+        <p style="font-size: 13px; color: #94a3b8; margin-top: 24px; border-top: 1px solid #f1f5f9; padding-top: 16px;">&copy; ${new Date().getFullYear()} Smatams. All rights reserved.</p>
       </div>
     `,
   };
@@ -439,4 +453,3 @@ module.exports = {
   sendPasswordResetEmail,
   sendMt5PasswordUpdateEmail
 };
-
