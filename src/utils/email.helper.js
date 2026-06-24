@@ -1,4 +1,5 @@
 const nodemailer = require('nodemailer');
+const path = require('path');
 require('dotenv').config();
 
 // Create transporter using Gmail
@@ -16,7 +17,6 @@ const transporter = nodemailer.createTransport({
  * @param {string} otp - The 6-digit verification code
  */
 async function sendOtpEmail(toEmail, otp) {
-  const portalUrl = process.env.CLIENT_PORTAL_URL || 'http://localhost:5173';
   const mailOptions = {
     from: `"Smatams" <${process.env.EMAIL_USER}>`,
     to: toEmail,
@@ -24,13 +24,18 @@ async function sendOtpEmail(toEmail, otp) {
     html: `
       <div style="font-family: 'Inter', sans-serif; color: #334155; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
         <div style="text-align: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #f1f5f9;">
-          <img src="${portalUrl}/LOGO (1).png" alt="Smatams Logo" style="height: 40px; object-fit: contain;" />
+          <img src="cid:logo" alt="Smatams Logo" style="height: 40px; object-fit: contain;" />
         </div>
         <h2 style="color: #0f172a; margin-top: 0;">Email Verification</h2>
         <p style="font-size: 16px; line-height: 1.6;">Your OTP is <b style="font-size: 18px; color: #3b82f6;">${otp}</b>. It is valid for 5 minutes.</p>
         <p style="font-size: 13px; color: #94a3b8; margin-top: 24px; border-top: 1px solid #f1f5f9; padding-top: 16px;">&copy; ${new Date().getFullYear()} Smatams. All rights reserved.</p>
       </div>
     `,
+    attachments: [{
+      filename: 'logo.png',
+      path: path.join(__dirname, 'logo.png'),
+      cid: 'logo'
+    }]
   };
 
   try {
@@ -139,7 +144,7 @@ async function sendVerificationSuccessEmail(toEmail, name) {
         <div class="wrapper">
           <div class="container">
             <div class="header">
-              <img src="${portalUrl}/LOGO (1).png" alt="Smatams Logo" style="height: 40px; object-fit: contain; margin-bottom: 8px;" />
+              <img src="cid:logo" alt="Smatams Logo" style="height: 40px; object-fit: contain; margin-bottom: 8px;" />
               <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;">Smatams</h1>
             </div>
             <div class="content">
@@ -161,6 +166,11 @@ async function sendVerificationSuccessEmail(toEmail, name) {
       </body>
       </html>
     `,
+    attachments: [{
+      filename: 'logo.png',
+      path: path.join(__dirname, 'logo.png'),
+      cid: 'logo'
+    }]
   };
 
   try {
@@ -299,7 +309,7 @@ async function sendMt5CredentialsEmail(toEmail, name, login, mPassword, iPasswor
         <div class="wrapper">
           <div class="container">
             <div class="header">
-              <img src="${portalUrl}/LOGO (1).png" alt="Smatams Logo" style="height: 40px; object-fit: contain; margin-bottom: 8px;" />
+              <img src="cid:logo" alt="Smatams Logo" style="height: 40px; object-fit: contain; margin-bottom: 8px;" />
               <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;">Smatams Trading</h1>
             </div>
             <div class="content">
@@ -357,6 +367,11 @@ async function sendMt5CredentialsEmail(toEmail, name, login, mPassword, iPasswor
       </body>
       </html>
     `,
+    attachments: [{
+      filename: 'logo.png',
+      path: path.join(__dirname, 'logo.png'),
+      cid: 'logo'
+    }]
   };
 
   try {
@@ -375,7 +390,6 @@ async function sendMt5CredentialsEmail(toEmail, name, login, mPassword, iPasswor
  * @param {string} otp - The 6-digit reset code
  */
 async function sendPasswordResetEmail(toEmail, otp) {
-  const portalUrl = process.env.CLIENT_PORTAL_URL || 'http://localhost:5173';
   const mailOptions = {
     from: `"Smatams" <${process.env.EMAIL_USER}>`,
     to: toEmail,
@@ -383,7 +397,7 @@ async function sendPasswordResetEmail(toEmail, otp) {
     html: `
       <div style="font-family: 'Inter', sans-serif; color: #334155; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
         <div style="text-align: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #f1f5f9;">
-          <img src="${portalUrl}/LOGO (1).png" alt="Smatams Logo" style="height: 40px; object-fit: contain;" />
+          <img src="cid:logo" alt="Smatams Logo" style="height: 40px; object-fit: contain;" />
         </div>
         <h2 style="color: #0f172a; margin-top: 0;">Password Reset</h2>
         <p style="font-size: 16px; line-height: 1.6;">Your password reset code is <b style="font-size: 18px; color: #ef4444;">${otp}</b>. It is valid for 5 minutes.</p>
@@ -391,6 +405,11 @@ async function sendPasswordResetEmail(toEmail, otp) {
         <p style="font-size: 13px; color: #94a3b8; margin-top: 24px; border-top: 1px solid #f1f5f9; padding-top: 16px;">&copy; ${new Date().getFullYear()} Smatams. All rights reserved.</p>
       </div>
     `,
+    attachments: [{
+      filename: 'logo.png',
+      path: path.join(__dirname, 'logo.png'),
+      cid: 'logo'
+    }]
   };
 
   try {
@@ -413,7 +432,6 @@ async function sendPasswordResetEmail(toEmail, otp) {
  * @param {string} iPassword - New Investor Password
  */
 async function sendMt5PasswordUpdateEmail(toEmail, name, login, mPassword, iPassword) {
-  const portalUrl = process.env.CLIENT_PORTAL_URL || 'http://localhost:5173';
   const mailOptions = {
     from: `"Smatams" <${process.env.EMAIL_USER}>`,
     to: toEmail,
@@ -421,7 +439,7 @@ async function sendMt5PasswordUpdateEmail(toEmail, name, login, mPassword, iPass
     html: `
       <div style="font-family: 'Inter', sans-serif; color: #334155; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
         <div style="text-align: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #f1f5f9;">
-          <img src="${portalUrl}/LOGO (1).png" alt="Smatams Logo" style="height: 40px; object-fit: contain;" />
+          <img src="cid:logo" alt="Smatams Logo" style="height: 40px; object-fit: contain;" />
         </div>
         <h2 style="color: #0f172a; margin-top: 0;">MT5 Passwords Updated</h2>
         <p>Hello ${name || 'Trader'},</p>
@@ -434,6 +452,11 @@ async function sendMt5PasswordUpdateEmail(toEmail, name, login, mPassword, iPass
         <p style="font-size: 13px; color: #94a3b8; margin-top: 24px; border-top: 1px solid #f1f5f9; padding-top: 16px;">&copy; ${new Date().getFullYear()} Smatams. All rights reserved.</p>
       </div>
     `,
+    attachments: [{
+      filename: 'logo.png',
+      path: path.join(__dirname, 'logo.png'),
+      cid: 'logo'
+    }]
   };
 
   try {
