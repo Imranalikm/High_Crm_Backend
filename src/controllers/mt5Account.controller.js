@@ -219,12 +219,35 @@ const getMT5Accounts = async (req, res) => {
   }
 };
 
+function isValidMT5Password(password) {
+  if (!password || password.length < 8 || password.length > 16) return false;
+  const hasUppercase = /[A-Z]/.test(password);
+  const hasLowercase = /[a-z]/.test(password);
+  const hasDigit = /[0-9]/.test(password);
+  const hasSpecial = /[^A-Za-z0-9]/.test(password);
+  return hasUppercase && hasLowercase && hasDigit && hasSpecial;
+}
+
 const updateMT5Password = async (req, res) => {
   try {
     const { accountid, mPassword, iPassword } = req.body;
     
     if (!accountid || !mPassword || !iPassword) {
       return res.status(400).json({ success: false, message: 'Missing required fields (accountid, mPassword, iPassword).' });
+    }
+
+    if (!isValidMT5Password(mPassword)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Master password must be 8-16 characters and contain at least one uppercase letter, one lowercase letter, one number, and one special character.'
+      });
+    }
+
+    if (!isValidMT5Password(iPassword)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Investor password must be 8-16 characters and contain at least one uppercase letter, one lowercase letter, one number, and one special character.'
+      });
     }
 
     const userId = req.user.id;
