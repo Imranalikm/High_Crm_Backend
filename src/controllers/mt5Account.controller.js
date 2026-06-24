@@ -95,8 +95,8 @@ const createMT5Account = async (req, res) => {
     const payload = {
       groupName: mappedMt5GroupName,
       name,
-      email,
-      phone,
+      email: '',
+      phone: '',
       country,
       balance: parseFloat(balance) || 0,
       mPassword,
