@@ -3,6 +3,11 @@ const { CrmGroup } = require('../models');
 // Create a new CRM Group
 const createCrmGroup = async (req, res, next) => {
   try {
+    const numericFields = ['minFirstDeposit', 'minDeposit', 'minWithdrawal', 'perProfileMaxAccount', 'firstDeposit', 'maxWithdrawalPerDay', 'spreadStartFrom'];
+    numericFields.forEach(field => {
+      if (req.body[field] === '') req.body[field] = null;
+    });
+
     const {
       name,
       mt5GroupName,
@@ -76,6 +81,11 @@ const updateCrmGroup = async (req, res, next) => {
   try {
     const { id } = req.params;
     
+    const numericFields = ['minFirstDeposit', 'minDeposit', 'minWithdrawal', 'perProfileMaxAccount', 'firstDeposit', 'maxWithdrawalPerDay', 'spreadStartFrom'];
+    numericFields.forEach(field => {
+      if (req.body[field] === '') req.body[field] = null;
+    });
+
     const group = await CrmGroup.findOne({ where: { id, isDeleted: false } });
     if (!group) {
       return res.status(404).json({ success: false, message: 'CRM Group not found.' });
