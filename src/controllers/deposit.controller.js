@@ -67,7 +67,7 @@ const createDeposit = async (req, res) => {
         accountId: accountId.toString(),
         amount,
         type:          type,
-        transactionId: !isAdmin && type === 'bank' ? transactionId : null,
+        transactionId: !isAdmin && (type === 'bank' || type === 'upi' || type === 'online') ? transactionId : null,
         mt5DealId:     mt5DealId,
         note:          !isAdmin ? note || ''  : undefined,
         comment:        isAdmin ? comment || '' : undefined,
