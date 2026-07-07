@@ -48,14 +48,6 @@ async function submitKyc(req, res, next) {
       });
     }
 
-    // Don't allow resubmission if already pending or approved
-    if (kyc.status === 'pending') {
-      return res.status(400).json({
-        success: false,
-        message: 'Your KYC is already submitted and pending review.'
-      });
-    }
-
     if (kyc.status === 'approved') {
       return res.status(400).json({
         success: false,
@@ -134,14 +126,14 @@ async function submitKyc(req, res, next) {
       city,
       postalCode,
       idDocType,
-      idFrontImage: filePaths.idFrontImage,
-      idBackImage: filePaths.idBackImage || null,
+      idFrontImage: filePaths.idFrontImage || kyc.idFrontImage,
+      idBackImage: filePaths.idBackImage || kyc.idBackImage,
       idDocNumber,
       idExpiryDate,
       idCountryOfIssue,
-      selfieImage: filePaths.selfieImage,
+      selfieImage: filePaths.selfieImage || kyc.selfieImage,
       addressDocType,
-      addressDocImage: filePaths.addressDocImage,
+      addressDocImage: filePaths.addressDocImage || kyc.addressDocImage,
       addressDocIssueDate,
       status: 'pending',
       rejectionReason: null,

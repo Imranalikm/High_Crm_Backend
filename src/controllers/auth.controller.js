@@ -12,11 +12,28 @@ async function register(req, res, next) {
   try {
     const { name, email, password, country, phone } = req.body;
 
-    // Validate request inputs
-    if (!name || !email || !password) {
+    // Validate required fields
+    if (!name || !email || !password || !country || !phone) {
       return res.status(400).json({
         success: false,
-        message: 'Name, email, and password are required.'
+        message: 'Name, email, password, country, and phone are required.'
+      });
+    }
+
+    // Validate country against known list
+    const VALID_COUNTRIES = require('../utils/countries.constant');
+    if (!VALID_COUNTRIES.includes(country)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid country selected.'
+      });
+    }
+
+    // Validate phone format (E.164: starts with + followed by 7-15 digits)
+    if (!/^\+\d{7,15}$/.test(phone)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid phone number format. Must include country code (e.g., +919876543210).'
       });
     }
 
@@ -24,7 +41,96 @@ async function register(req, res, next) {
     const userRole = await Role.findOne({ where: { key: 'user' } });
     const roleId = userRole ? userRole.id : null;
 
-    // Create user. Status defaults to 'pending'
+    // Check if user already exists
+    const existingUser = await User.findOne({ where: { email } });
+    if (existingUser) {
+      if (existingUser.status === 'active') {
+        return res.status(409).json({
+          success: false,
+          message: 'An account with this email already exists.'
+        });
+      }
+      if (existingUser.status === 'blocked') {
+        return res.status(403).json({
+          success: false,
+          message: 'This account has been blocked. Please contact support.'
+        });
+      }
+
+      // If pending, allow updating registration details and sending a fresh OTP
+      await existingUser.update({
+        name,
+        password, // hook hashes this in beforeUpdate
+        country,
+        phone,
+        roleId,
+      });
+
+      // Generate and send new OTP for email verification
+      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+      const salt = await bcrypt.genSalt(10);
+      const hashedOtp = await bcrypt.hash(otpCode, salt);
+      const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+      await existingUser.update({
+        otp: hashedOtp,
+        otpExpiresAt,
+        lastOtpSentAt: new Date()
+      });
+
+      // Send OTP email (non-blocking)
+      sendOtpEmail(existingUser.email, otpCode).catch(err => {
+        console.error(`[Register] Failed to send OTP email to ${existingUser.email}:`, err.message);
+      });
+
+      // Update existing Kyc draft or create new one
+      const existingKyc = await Kyc.findOne({ where: { userId: existingUser.id } });
+      if (existingKyc) {
+        await existingKyc.update({
+          fullName: name,
+          phone,
+          country,
+          updatedBy: existingUser.id
+        });
+      } else {
+        await Kyc.create({
+          userId: existingUser.id,
+          fullName: name,
+          email,
+          phone,
+          country,
+          status: 'draft',
+          createdBy: existingUser.id,
+          updatedBy: existingUser.id
+        });
+      }
+
+      // Fetch user with role info
+      const userWithRole = await User.findByPk(existingUser.id, {
+        include: [{ model: Role, as: 'role' }]
+      });
+
+      const accessToken = generateAccessToken(userWithRole);
+      const refreshToken = generateRefreshToken(userWithRole);
+
+      return res.status(201).json({
+        success: true,
+        message: 'Registration successful. A new OTP has been sent to your email for verification.',
+        data: {
+          accessToken,
+          refreshToken,
+          user: {
+            id: userWithRole.id,
+            name: userWithRole.name,
+            email: userWithRole.email,
+            status: userWithRole.status,
+            role: userWithRole.role ? { name: userWithRole.role.name, key: userWithRole.role.key, type: userWithRole.role.type } : null
+          }
+        }
+      });
+    }
+
+    // Create user if not exists. Status defaults to 'pending'
     const user = await User.create({
       name,
       email,

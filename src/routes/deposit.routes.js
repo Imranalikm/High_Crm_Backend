@@ -2,11 +2,12 @@ const express = require('express');
 const router = express.Router();
 const depositController = require('../controllers/deposit.controller');
 const authenticateToken = require('../middlewares/auth.middleware');
+const requireKycApproved = require('../middlewares/kycCheck.middleware');
 
 const { depositUpload } = require('../config/upload');
 
 // User and Admin deposit creation
-router.post('/', authenticateToken, depositUpload.single('depositProof'), depositController.createDeposit);
+router.post('/', authenticateToken, requireKycApproved, depositUpload.single('depositProof'), depositController.createDeposit);
 
 // User endpoints
 router.get('/my-deposits', authenticateToken, depositController.getDepositsByUserId);
