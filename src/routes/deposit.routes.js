@@ -7,7 +7,7 @@ const requireKycApproved = require('../middlewares/kycCheck.middleware');
 const { depositUpload } = require('../config/upload');
 
 // User and Admin deposit creation
-router.post('/', authenticateToken, requireKycApproved, depositUpload.single('depositProof'), depositController.createDeposit);
+router.post('/', authenticateToken, depositUpload.single('depositProof'), depositController.createDeposit);
 
 // User endpoints
 router.get('/my-deposits', authenticateToken, depositController.getDepositsByUserId);
