@@ -1,4 +1,5 @@
 const { Ticket, TicketMessage, User } = require('../models');
+const { getIo } = require('../config/socket');
 
 // Generate random ticket ID e.g., TICK-1234
 function generateTicketId() {
@@ -8,11 +9,20 @@ function generateTicketId() {
 
 const createTicket = async (req, res) => {
   try {
+    console.log('[createTicket] req.body:', req.body);
+    console.log('[createTicket] req.files:', req.files);
     const { subject, category, priority, description } = req.body;
     
     if (!subject || !category || !description) {
       return res.status(400).json({ success: false, message: 'Missing required fields: subject, category, or description' });
     }
+
+    const attachments = (req.files || []).map(file => ({
+      name: file.originalname,
+      url: `/uploads/tickets/${file.filename}`,
+      size: file.size,
+      mimetype: file.mimetype
+    }));
 
     const ticket = await Ticket.create({
       ticketId: generateTicketId(),
@@ -22,7 +32,14 @@ const createTicket = async (req, res) => {
       priority: priority || 'MED',
       status: 'OPEN',
       description,
+      attachments: attachments.length > 0 ? attachments : []
     });
+
+    try {
+      getIo().emit('new_ticket', ticket);
+    } catch (e) {
+      console.error('[Socket.io] Error emitting new_ticket:', e.message);
+    }
 
     return res.status(201).json({ success: true, message: 'Ticket created', data: ticket });
   } catch (err) {
@@ -39,7 +56,7 @@ const getTickets = async (req, res) => {
     const tickets = await Ticket.findAll({
       where: whereClause,
       include: [
-        { model: User, as: 'user', attributes: ['id', 'name', 'email'] },
+        { model: User, as: 'user', attributes: ['id', 'name', 'email', 'phone'] },
         { model: User, as: 'agent', attributes: ['id', 'name', 'email'] }
       ],
       order: [['createdAt', 'DESC']]
@@ -62,7 +79,7 @@ const getTicketById = async (req, res) => {
         id: ticketIdParam
       },
       include: [
-        { model: User, as: 'user', attributes: ['id', 'name', 'email'] },
+        { model: User, as: 'user', attributes: ['id', 'name', 'email', 'phone'] },
         { model: User, as: 'agent', attributes: ['id', 'name', 'email'] },
         { 
           model: TicketMessage, 
@@ -96,8 +113,16 @@ const addMessage = async (req, res) => {
     const { body, type } = req.body;
     const ticketIdParam = req.params.id;
 
-    if (!body) {
-      return res.status(400).json({ success: false, message: 'Message body is required' });
+    // Build attachments array from uploaded files
+    const attachments = (req.files || []).map(file => ({
+      name: file.originalname,
+      url: `/uploads/tickets/${file.filename}`,
+      size: file.size,
+      mimetype: file.mimetype
+    }));
+
+    if (!body && attachments.length === 0) {
+      return res.status(400).json({ success: false, message: 'Message body or attachment is required' });
     }
 
     const ticket = await Ticket.findOne({ where: { id: ticketIdParam } });
@@ -117,8 +142,9 @@ const addMessage = async (req, res) => {
     const message = await TicketMessage.create({
       ticketId: ticket.id,
       authorId: req.user.id,
-      body,
-      type: msgType
+      body: body || '',
+      type: msgType,
+      attachments: attachments.length > 0 ? attachments : []
     });
 
     // Refresh updated timestamp on ticket
@@ -128,6 +154,12 @@ const addMessage = async (req, res) => {
     const fullMessage = await TicketMessage.findByPk(message.id, {
       include: [{ model: User, as: 'author', attributes: ['id', 'name', 'email', 'roleId'] }]
     });
+
+    try {
+      getIo().to(`ticket_${ticket.id}`).emit('new_message', fullMessage);
+    } catch (e) {
+      console.error('[Socket.io] Error emitting new_message:', e.message);
+    }
 
     return res.status(201).json({ success: true, message: 'Message added', data: fullMessage });
   } catch (err) {
@@ -155,6 +187,14 @@ const updateTicket = async (req, res) => {
     if (agentId !== undefined) ticket.agentId = agentId;
 
     await ticket.save();
+
+    try {
+      getIo().to(`ticket_${ticket.id}`).emit('ticket_updated', ticket);
+      // Also emit to general room for admin dashboard updates
+      getIo().emit('ticket_updated', ticket);
+    } catch (e) {
+      console.error('[Socket.io] Error emitting ticket_updated:', e.message);
+    }
 
     return res.status(200).json({ success: true, message: 'Ticket updated', data: ticket });
   } catch (err) {

@@ -4,11 +4,15 @@ const fs = require('fs');
 
 const kycUploadDir = path.join(process.cwd(), 'uploads', 'kyc');
 const depositUploadDir = path.join(process.cwd(), 'uploads', 'deposits');
+const ticketUploadDir = path.join(process.cwd(), 'uploads', 'tickets');
 if (!fs.existsSync(kycUploadDir)) {
   fs.mkdirSync(kycUploadDir, { recursive: true });
 }
 if (!fs.existsSync(depositUploadDir)) {
   fs.mkdirSync(depositUploadDir, { recursive: true });
+}
+if (!fs.existsSync(ticketUploadDir)) {
+  fs.mkdirSync(ticketUploadDir, { recursive: true });
 }
 
 // Storage config for KYC
@@ -67,7 +71,38 @@ const depositUpload = multer({
   }
 });
 
+// Storage config for Ticket attachments
+const ticketStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, ticketUploadDir);
+  },
+  filename: function (req, file, cb) {
+    const userId = req.user ? req.user.id : 'unknown';
+    const timestamp = Date.now();
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `ticket_${userId}_${timestamp}${ext}`);
+  }
+});
+
+// Multer instance for Ticket uploads
+const ticketUpload = multer({
+  storage: ticketStorage,
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['.png', '.jpg', '.jpeg', '.pdf', '.gif', '.webp', '.doc', '.docx', '.xls', '.xlsx', '.txt', '.zip'];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowedTypes.includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error('File type not allowed.'), false);
+    }
+  },
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB max
+  }
+});
+
 module.exports = {
   kycUpload,
-  depositUpload
+  depositUpload,
+  ticketUpload
 };

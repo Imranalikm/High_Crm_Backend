@@ -51,6 +51,12 @@ const Ticket = sequelize.define('Ticket', {
     type: DataTypes.TEXT,
     allowNull: false,
   },
+  attachments: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: [],
+    comment: 'Array of {name, url, size, type}'
+  },
 }, {
   tableName: 'tickets',
   timestamps: true,

@@ -15,7 +15,8 @@ const app = express();
 // Security Middlewares
 // Disabling contentSecurityPolicy allows the Swagger UI assets (CSS/JS) to render correctly.
 app.use(helmet({
-  contentSecurityPolicy: false
+  contentSecurityPolicy: false,
+  crossOriginResourcePolicy: false
 }));
 app.use(cors({
   origin: function (origin, callback) {

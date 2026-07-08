@@ -32,6 +32,12 @@ const TicketMessage = sequelize.define('TicketMessage', {
     type: DataTypes.ENUM('user', 'agent', 'internal', 'system'),
     allowNull: false,
     defaultValue: 'user'
+  },
+  attachments: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: [],
+    comment: 'Array of {name, url, size, type}'
   }
 }, {
   tableName: 'ticket_messages',
