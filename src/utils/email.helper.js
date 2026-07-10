@@ -336,14 +336,12 @@ async function sendMt5CredentialsEmail(toEmail, name, login, mPassword, iPasswor
                   <tr>
                     <td style="padding: 12px 0; color: #64748b; font-weight: 500;">Master Password:</td>
                     <td style="padding: 12px 0; text-align: right; font-family: monospace; font-size: 16px;">
-                      <span style="font-size: 10px; color: #94a3b8; font-family: 'Inter', sans-serif; text-transform: uppercase; margin-right: 8px;">Click to select &rarr;</span>
                       <span style="color: #ef4444; font-weight: bold; background-color: #fee2e2; padding: 6px 10px; border-radius: 6px; border: 1px solid #fecaca; user-select: all; -webkit-user-select: all;">${mPassword}</span>
                     </td>
                   </tr>
                   <tr>
                     <td style="padding: 12px 0; color: #64748b; font-weight: 500;">Investor Password:</td>
                     <td style="padding: 12px 0; text-align: right; font-family: monospace; font-size: 16px;">
-                      <span style="font-size: 10px; color: #94a3b8; font-family: 'Inter', sans-serif; text-transform: uppercase; margin-right: 8px;">Click to select &rarr;</span>
                       <span style="color: #0f172a; font-weight: bold; background-color: #e2e8f0; padding: 6px 10px; border-radius: 6px; border: 1px solid #cbd5e1; user-select: all; -webkit-user-select: all;">${iPassword}</span>
                     </td>
                   </tr>
@@ -473,7 +471,6 @@ async function sendMt5PasswordUpdateEmail(toEmail, name, login, mPassword, iPass
             <strong>Investor Password:</strong> 
             <span style="font-family: monospace; color: #0f172a; font-weight: bold; background-color: #e2e8f0; padding: 6px 10px; border-radius: 6px; border: 1px solid #cbd5e1; user-select: all; -webkit-user-select: all; font-size: 16px;">${iPassword}</span>
           </p>
-          <p style="margin: 16px 0 0 0; font-size: 12px; color: #64748b; text-align: right;">(Click a password to select it)</p>
         </div>
         <p style="font-size: 15px; color: #64748b;">Please keep these credentials safe.</p>
         <p style="font-size: 13px; color: #94a3b8; margin-top: 24px; border-top: 1px solid #f1f5f9; padding-top: 16px;">&copy; ${new Date().getFullYear()} Smatams. All rights reserved.</p>
