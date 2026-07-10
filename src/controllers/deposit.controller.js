@@ -1,5 +1,5 @@
 const axios = require('axios');
-const { Deposit, Mt5Account, User, sequelize } = require('../models');
+const { Deposit, Mt5Account, User, sequelize, CrmGroup } = require('../models');
 const { getToken, connectManager } = require('../utils/tokenFetch');
 const { Op } = require('sequelize');
 
@@ -30,6 +30,16 @@ const createDeposit = async (req, res) => {
     if (!mt5Account) {
       await transaction.rollback();
       return res.status(404).json({ message: 'MT5 account not found.' });
+    }
+
+    if (!isAdmin && mt5Account.groupName) {
+      const crmGroup = await CrmGroup.findOne({ where: { name: mt5Account.groupName }, transaction });
+      if (crmGroup && crmGroup.minDeposit !== null && crmGroup.minDeposit !== undefined) {
+        if (Number(amount) < Number(crmGroup.minDeposit)) {
+          await transaction.rollback();
+          return res.status(400).json({ message: `Minimum deposit for this account type is $${crmGroup.minDeposit}.` });
+        }
+      }
     }
 
     /* ── ADMIN: credit immediately ─────────────────────────── */

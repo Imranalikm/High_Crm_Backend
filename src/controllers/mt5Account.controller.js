@@ -221,9 +221,18 @@ const getMT5Accounts = async (req, res) => {
       order: [['createdAt', 'DESC']]
     });
 
+    const crmGroups = await CrmGroup.findAll();
+    const accountsWithMinDeposit = accounts.map(acc => {
+      const group = crmGroups.find(g => g.name === acc.groupName);
+      return {
+        ...acc.toJSON(),
+        minDeposit: group ? group.minDeposit : 0
+      };
+    });
+
     return res.status(200).json({
       success: true,
-      data: accounts
+      data: accountsWithMinDeposit
     });
   } catch (err) {
     console.error('Error fetching MT5 accounts:', err.message);
