@@ -95,19 +95,7 @@ async function submitKyc(req, res, next) {
       });
     }
 
-    // Validate address proof issue date (must be within 90 days)
-    if (addressDocIssueDate) {
-      const issueDate = new Date(addressDocIssueDate);
-      const ninetyDaysAgo = new Date();
-      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
 
-      if (issueDate < ninetyDaysAgo) {
-        return res.status(400).json({
-          success: false,
-          message: 'Address proof document must be dated within the last 90 days.'
-        });
-      }
-    }
 
     // Build file paths
     const filePaths = {};
