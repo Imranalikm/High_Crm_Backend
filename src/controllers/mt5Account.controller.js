@@ -13,7 +13,7 @@ function generateRandomPassword(length = 10) {
     password += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   // Ensure it meets basic requirements
-  password += "A1!"; 
+  password += "@A1"; 
   return password;
 }
 
