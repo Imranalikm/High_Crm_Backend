@@ -1,4 +1,5 @@
 const { Kyc, User } = require('../models');
+const { sendKycApprovalEmail } = require('../utils/email.helper');
 
 // ─── USER PANEL ENDPOINTS ───
 
@@ -214,7 +215,9 @@ async function getKycById(req, res, next) {
  */
 async function approveKyc(req, res, next) {
   try {
-    const kyc = await Kyc.findByPk(req.params.id);
+    const kyc = await Kyc.findByPk(req.params.id, {
+      include: [{ model: User, as: 'user' }]
+    });
 
     if (!kyc) {
       return res.status(404).json({
@@ -237,6 +240,14 @@ async function approveKyc(req, res, next) {
       reviewedAt: new Date(),
       updatedBy: req.user.id
     });
+
+    // Send KYC approval email to the user
+    const targetEmail = kyc.email || (kyc.user && kyc.user.email);
+    const targetName = kyc.fullName || (kyc.user && kyc.user.name);
+    
+    if (targetEmail) {
+      await sendKycApprovalEmail(targetEmail, targetName);
+    }
 
     return res.status(200).json({
       success: true,

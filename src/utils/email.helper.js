@@ -94,7 +94,7 @@ async function sendVerificationSuccessEmail(toEmail, name) {
             border: 1px solid #e2e8f0;
           }
           .header {
-            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            background-color: #284cf4;
             padding: 24px;
             text-align: center;
           }
@@ -484,10 +484,57 @@ async function sendMt5PasswordUpdateEmail(toEmail, name, login, mPassword, iPass
   }
 }
 
+/**
+ * Send KYC Approval Success Email
+ * @param {string} toEmail - Recipient email
+ * @param {string} name - Recipient name
+ */
+async function sendKycApprovalEmail(toEmail, name) {
+  const mailOptions = {
+    from: `"Smatams" <${process.env.EMAIL_USER}>`,
+    to: toEmail,
+    subject: 'Smatams - KYC Verification Approved',
+    html: `
+      <div style="font-family: 'Inter', sans-serif; color: #334155; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+        <div style="text-align: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #f1f5f9;">
+          <a href="https://account.smatams.com" target="_blank" style="text-decoration: none; border: none; outline: none; display: inline-block;">
+            <img src="cid:logo" alt="Smatams Logo" style="height: 40px; object-fit: contain; border: none;" />
+          </a>
+        </div>
+        <h2 style="color: #0f172a; margin-top: 0; text-align: center;">KYC Verification Complete</h2>
+        <p>Hello ${name || 'Trader'},</p>
+        <p style="font-size: 16px; line-height: 1.6; color: #475569;">
+          We are pleased to inform you that your KYC verification is successfully completed.
+        </p>
+        <p style="font-size: 16px; line-height: 1.6; color: #475569;">
+          Your account is now fully approved.
+        </p>
+        <p style="font-size: 13px; color: #94a3b8; margin-top: 24px; border-top: 1px solid #f1f5f9; padding-top: 16px; text-align: center;">&copy; ${new Date().getFullYear()} Smatams. All rights reserved.</p>
+      </div>
+    `,
+    attachments: [{
+      filename: 'logo.png',
+      path: path.join(__dirname, 'logo.png'),
+      cid: 'logo',
+      contentDisposition: 'inline'
+    }]
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`[Email] KYC approval email sent to ${toEmail}. Message ID: ${info.messageId}`);
+    return true;
+  } catch (error) {
+    console.error(`[Email Error] Failed to send KYC approval email to ${toEmail}:`, error.message);
+    return false;
+  }
+}
+
 module.exports = {
   sendOtpEmail,
   sendVerificationSuccessEmail,
   sendMt5CredentialsEmail,
   sendPasswordResetEmail,
-  sendMt5PasswordUpdateEmail
+  sendMt5PasswordUpdateEmail,
+  sendKycApprovalEmail
 };
