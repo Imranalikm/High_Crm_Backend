@@ -78,13 +78,13 @@ async function submitKyc(req, res, next) {
     if (!addressDocIssueDate) missingFields.push('addressDocIssueDate');
 
     // Validate required files
-    if (!req.files || !req.files.idFrontImage) missingFields.push('idFrontImage');
-    if (!req.files || !req.files.selfieImage) missingFields.push('selfieImage');
-    if (!req.files || !req.files.addressDocImage) missingFields.push('addressDocImage');
+    if ((!req.files || !req.files.idFrontImage) && !kyc.idFrontImage) missingFields.push('idFrontImage');
+    if ((!req.files || !req.files.selfieImage) && !kyc.selfieImage) missingFields.push('selfieImage');
+    if ((!req.files || !req.files.addressDocImage) && !kyc.addressDocImage) missingFields.push('addressDocImage');
 
     // Back image required for national_id and driving_license
     if (idDocType && idDocType !== 'passport') {
-      if (!req.files || !req.files.idBackImage) missingFields.push('idBackImage');
+      if ((!req.files || !req.files.idBackImage) && !kyc.idBackImage) missingFields.push('idBackImage');
     }
 
     if (missingFields.length > 0) {

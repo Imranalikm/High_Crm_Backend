@@ -1,4 +1,4 @@
-const { NotificationSetting, NotificationTemplate } = require('../models');
+const { NotificationSetting, NotificationTemplate, AppNotification } = require('../models');
 
 /**
  * Get notification settings (returns the single row with ID=1, creating it if it doesn't exist)
@@ -163,6 +163,82 @@ async function deleteTemplate(req, res, next) {
   }
 }
 
+/**
+ * Get unread app notifications for the current user
+ */
+async function getUnreadNotifications(req, res, next) {
+  try {
+    const notifications = await AppNotification.findAll({
+      where: {
+        userId: req.user.id,
+        isRead: false
+      },
+      order: [['createdAt', 'DESC']],
+      limit: 10
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: notifications
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Mark a specific notification as read
+ */
+async function markAsRead(req, res, next) {
+  try {
+    const { id } = req.params;
+
+    const notification = await AppNotification.findOne({
+      where: {
+        id,
+        userId: req.user.id
+      }
+    });
+
+    if (!notification) {
+      return res.status(404).json({
+        success: false,
+        message: 'Notification not found'
+      });
+    }
+
+    notification.isRead = true;
+    notification.readAt = new Date();
+    await notification.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Notification marked as read'
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Mark all notifications as read for current user
+ */
+async function markAllAsRead(req, res, next) {
+  try {
+    await AppNotification.update(
+      { isRead: true, readAt: new Date() },
+      { where: { userId: req.user.id, isRead: false } }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'All notifications marked as read'
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   getNotificationConfig,
   updateNotificationConfig,
@@ -170,5 +246,8 @@ module.exports = {
   getTemplateById,
   createTemplate,
   updateTemplate,
-  deleteTemplate
+  deleteTemplate,
+  getUnreadNotifications,
+  markAsRead,
+  markAllAsRead
 };

@@ -39,6 +39,12 @@ const initSocket = (server) => {
   io.on('connection', (socket) => {
     console.log(`[Socket.io] User connected: ${socket.user.id} (${socket.user.name})`);
 
+    // Join admin_room if applicable
+    if (socket.user.role && socket.user.role.type !== 'user') {
+      socket.join('admin_room');
+      console.log(`[Socket.io] User ${socket.user.id} joined admin_room`);
+    }
+
     // Users and admins can join specific ticket rooms to receive real-time updates
     socket.on('join_ticket', (ticketId) => {
       socket.join(`ticket_${ticketId}`);

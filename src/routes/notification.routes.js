@@ -7,7 +7,10 @@ const {
   getTemplateById,
   createTemplate,
   updateTemplate,
-  deleteTemplate
+  deleteTemplate,
+  getUnreadNotifications,
+  markAsRead,
+  markAllAsRead
 } = require('../controllers/notification.controller');
 
 const authenticateToken = require('../middlewares/auth.middleware');
@@ -26,5 +29,10 @@ router.get('/templates/:id', requirePermission('platform_settings', 'view'), get
 router.post('/templates', requirePermission('platform_settings', 'edit'), createTemplate);
 router.put('/templates/:id', requirePermission('platform_settings', 'edit'), updateTemplate);
 router.delete('/templates/:id', requirePermission('platform_settings', 'edit'), deleteTemplate);
+
+// App Notification endpoints
+router.get('/unread', getUnreadNotifications);
+router.put('/mark-all-read', markAllAsRead);
+router.put('/:id/read', markAsRead);
 
 module.exports = router;

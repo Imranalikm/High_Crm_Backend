@@ -1,4 +1,5 @@
-const { User, Role, RolePermission, Module, Kyc } = require('../models');
+const { User, Role, RolePermission, Module, Kyc, AppNotification } = require('../models');
+const { getIo } = require('../config/socket');
 const { generateAccessToken, generateRefreshToken, verifyRefreshToken } = require('../utils/jwt.helper');
 const { sendOtpEmail, sendVerificationSuccessEmail, sendPasswordResetEmail } = require('../utils/email.helper');
 const bcrypt = require('bcryptjs');
@@ -385,6 +386,39 @@ async function verifyOTP(req, res, next) {
 
     if (user.status === 'pending') {
       updates.status = 'active';
+
+      // Trigger Notification for admins since the user just verified their OTP for the first time
+      try {
+        const admins = await User.findAll({
+          include: [{
+            model: Role,
+            as: 'role',
+            where: {
+              type: 'admin'
+            }
+          }]
+        });
+
+        const notifications = admins.map(admin => ({
+          userId: admin.id,
+          title: 'New User Registration',
+          message: `A new user (${user.name}) has registered successfully.`,
+          type: 'registration',
+          isRead: false
+        }));
+
+        const createdNotifications = await AppNotification.bulkCreate(notifications);
+
+        if (createdNotifications.length > 0) {
+          getIo().to('admin_room').emit('new_notification', {
+            title: 'New User Registration',
+            message: `A new user (${user.name}) has registered successfully.`,
+            type: 'registration'
+          });
+        }
+      } catch (notifErr) {
+        console.error('[VerifyOTP] Failed to create notifications:', notifErr.message);
+      }
     }
 
     await user.update(updates);
