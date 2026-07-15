@@ -20,7 +20,13 @@ async function startServer() {
     try {
       await sequelize.query('ALTER TABLE "ticket_messages" ADD COLUMN IF NOT EXISTS "attachments" JSONB;');
       await sequelize.query('ALTER TABLE "tickets" ADD COLUMN IF NOT EXISTS "attachments" JSONB;');
-      console.log('[Database] Checked attachments column on tickets and ticket_messages.');
+      
+      // Add editStatus to bank_accounts
+      try {
+        await sequelize.query(`ALTER TABLE "bank_accounts" ADD COLUMN IF NOT EXISTS "editStatus" VARCHAR(255) DEFAULT 'none';`);
+      } catch(e) {}
+      
+      console.log('[Database] Checked columns on tickets and bank_accounts.');
     } catch (e) {
       console.warn('[Database] Optional sync warning:', e.message);
     }

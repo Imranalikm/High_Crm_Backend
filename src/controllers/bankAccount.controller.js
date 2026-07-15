@@ -62,6 +62,11 @@ const createBankAccount = async (req, res) => {
       }
     }
 
+    const existingCount = await BankAccount.count({ where: { userId } });
+    if (existingCount >= 1) {
+      return res.status(400).json({ message: 'You can only add one bank account.' });
+    }
+
     // If marking as default, unmark all others first
     if (isDefault) {
       await BankAccount.update(
@@ -71,12 +76,11 @@ const createBankAccount = async (req, res) => {
     }
 
     // If this is the user's first account, make it default automatically
-    const existingCount = await BankAccount.count({ where: { userId } });
     const shouldBeDefault = isDefault || existingCount === 0;
 
     const account = await BankAccount.create({
       userId,
-      type,
+      type: 'bank',
       name,
       details: details || {},
       isDefault: shouldBeDefault,
@@ -102,6 +106,10 @@ const updateBankAccount = async (req, res) => {
     if (!account) {
       return res.status(404).json({ message: 'Payment method not found.' });
     }
+    
+    if (account.editStatus !== 'approved') {
+      return res.status(403).json({ message: 'You must request edit access from an admin first.' });
+    }
 
     if (type) account.type = type;
     if (name) account.name = name;
@@ -116,6 +124,8 @@ const updateBankAccount = async (req, res) => {
       }
       account.details = details;
     }
+    
+    account.editStatus = 'none'; // reset after edit
 
     await account.save();
     res.json({ message: 'Payment method updated.', bankAccount: account });
@@ -189,6 +199,58 @@ const setDefaultBankAccount = async (req, res) => {
   }
 };
 
+const requestEdit = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { id } = req.params;
+    const account = await BankAccount.findOne({ where: { id, userId } });
+    if (!account) return res.status(404).json({ message: 'Bank account not found.' });
+    
+    account.editStatus = 'pending';
+    await account.save();
+    res.json({ message: 'Edit request sent to admin.', bankAccount: account });
+  } catch (err) {
+    console.error('requestEdit error:', err);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+};
+
+const approveEdit = async (req, res) => {
+  try {
+    if (req.user?.role?.type !== 'admin') {
+      return res.status(403).json({ message: 'Only admins can approve edit requests.' });
+    }
+    const { id } = req.params;
+    const account = await BankAccount.findByPk(id);
+    if (!account) return res.status(404).json({ message: 'Bank account not found.' });
+    
+    account.editStatus = 'approved';
+    await account.save();
+    res.json({ message: 'Edit request approved.', bankAccount: account });
+  } catch (err) {
+    console.error('approveEdit error:', err);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+};
+
+const rejectEdit = async (req, res) => {
+  try {
+    if (req.user?.role?.type !== 'admin') {
+      return res.status(403).json({ message: 'Only admins can reject edit requests.' });
+    }
+    const { id } = req.params;
+    const account = await BankAccount.findByPk(id);
+    if (!account) return res.status(404).json({ message: 'Bank account not found.' });
+    
+    account.editStatus = 'none';
+    await account.save();
+    res.json({ message: 'Edit request rejected.', bankAccount: account });
+  } catch (err) {
+    console.error('rejectEdit error:', err);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+};
+
 module.exports = {
   getMyBankAccounts,
   getBankAccountsByUserId,
@@ -196,4 +258,7 @@ module.exports = {
   updateBankAccount,
   deleteBankAccount,
   setDefaultBankAccount,
+  requestEdit,
+  approveEdit,
+  rejectEdit,
 };

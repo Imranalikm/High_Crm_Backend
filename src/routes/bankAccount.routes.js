@@ -9,8 +9,11 @@ router.post('/', authenticateToken, bankAccountController.createBankAccount);
 router.put('/:id', authenticateToken, bankAccountController.updateBankAccount);
 router.delete('/:id', authenticateToken, bankAccountController.deleteBankAccount);
 router.patch('/:id/default', authenticateToken, bankAccountController.setDefaultBankAccount);
+router.post('/:id/request-edit', authenticateToken, bankAccountController.requestEdit);
 
 // Admin endpoint — view a user's bank accounts
 router.get('/user/:userId', authenticateToken, bankAccountController.getBankAccountsByUserId);
+router.post('/:id/approve-edit', authenticateToken, bankAccountController.approveEdit);
+router.post('/:id/reject-edit', authenticateToken, bankAccountController.rejectEdit);
 
 module.exports = router;

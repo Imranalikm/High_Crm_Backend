@@ -30,6 +30,11 @@ const BankAccount = sequelize.define('BankAccount', {
     type: DataTypes.JSON,
     allowNull: true,
     comment: 'Type-specific fields: accountNumber, IFSC, cardNumber, walletAddress, etc.'
+  },
+  editStatus: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    defaultValue: 'none'
   }
 }, {
   tableName: 'bank_accounts',
