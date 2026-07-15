@@ -54,6 +54,14 @@ const createBankAccount = async (req, res) => {
       return res.status(400).json({ message: 'Invalid type. Must be bank, card, crypto, or upi.' });
     }
 
+    if (type === 'bank') {
+      const accountName = details?.accountName?.trim()?.toLowerCase() || '';
+      const userName = req.user.name?.trim()?.toLowerCase() || '';
+      if (accountName !== userName) {
+        return res.status(400).json({ message: 'The account holder name must match your registered profile name.' });
+      }
+    }
+
     // If marking as default, unmark all others first
     if (isDefault) {
       await BankAccount.update(
@@ -97,7 +105,17 @@ const updateBankAccount = async (req, res) => {
 
     if (type) account.type = type;
     if (name) account.name = name;
-    if (details) account.details = details;
+    
+    if (details) {
+      if ((type || account.type) === 'bank') {
+        const accountName = details.accountName?.trim()?.toLowerCase() || '';
+        const userName = req.user.name?.trim()?.toLowerCase() || '';
+        if (accountName && accountName !== userName) {
+          return res.status(400).json({ message: 'The account holder name must match your registered profile name.' });
+        }
+      }
+      account.details = details;
+    }
 
     await account.save();
     res.json({ message: 'Payment method updated.', bankAccount: account });
