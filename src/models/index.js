@@ -14,6 +14,7 @@ const Withdrawal = require('./Withdrawal');
 const NotificationSetting = require('./NotificationSetting');
 const NotificationTemplate = require('./NotificationTemplate');
 const AppNotification = require('./AppNotification');
+const BankAccount = require('./BankAccount');
 
 // User <-> Role association
 User.belongsTo(Role, { foreignKey: 'roleId', as: 'role' });
@@ -97,6 +98,10 @@ NotificationTemplate.belongsTo(User, { as: 'updater', foreignKey: 'updatedBy' })
 AppNotification.belongsTo(User, { as: 'user', foreignKey: 'userId' });
 User.hasMany(AppNotification, { as: 'notifications', foreignKey: 'userId' });
 
+// User <-> BankAccount association
+User.hasMany(BankAccount, { foreignKey: 'userId', as: 'bankAccounts' });
+BankAccount.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
 module.exports = {
   sequelize,
   User,
@@ -113,5 +118,6 @@ module.exports = {
   Withdrawal,
   NotificationSetting,
   NotificationTemplate,
-  AppNotification
+  AppNotification,
+  BankAccount
 };
