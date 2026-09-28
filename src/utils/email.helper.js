@@ -2,9 +2,12 @@ const nodemailer = require('nodemailer');
 const path = require('path');
 require('dotenv').config();
 
-// Create transporter using Gmail
+// Create transporter using custom SMTP server
+const smtpPort = Number(process.env.SMTP_PORT) || 465;
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: process.env.SMTP_HOST || 'mail.smatams.com',
+  port: smtpPort,
+  secure: smtpPort === 465, // SSL on 465, STARTTLS on 587
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
