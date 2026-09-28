@@ -9,14 +9,15 @@ const { Op } = require('sequelize');
  */
 async function getAllUsers(req, res, next) {
   try {
-    const {
-      page = 1,
-      limit = 10,
-      search,
-      status
-    } = req.query;
+    const { page, limit, search, status } = req.query;
 
-    const offset = (parseInt(page) - 1) * parseInt(limit);
+    // Pagination is opt-in: pass ?limit=... to page the results. With no
+    // limit given, every matching user is returned in one page, the same
+    // way the deposits/withdrawals/tickets list endpoints already behave.
+    const isPaginated = limit !== undefined;
+    const parsedLimit = isPaginated ? parseInt(limit) : undefined;
+    const parsedPage = parseInt(page) || 1;
+    const offset = isPaginated ? (parsedPage - 1) * parsedLimit : undefined;
 
     // Build where clause
     const whereClause = {};
@@ -49,8 +50,7 @@ async function getAllUsers(req, res, next) {
         { model: Kyc, as: 'kyc', attributes: ['status', 'selfieImage'] }
       ],
       order: [['createdAt', 'DESC']],
-      limit: parseInt(limit),
-      offset,
+      ...(isPaginated ? { limit: parsedLimit, offset } : {}),
       distinct: true
     });
 
@@ -79,9 +79,9 @@ async function getAllUsers(req, res, next) {
         users: formattedUsers,
         pagination: {
           total: count,
-          page: parseInt(page),
-          limit: parseInt(limit),
-          totalPages: Math.ceil(count / parseInt(limit))
+          page: isPaginated ? parsedPage : 1,
+          limit: isPaginated ? parsedLimit : count,
+          totalPages: isPaginated ? Math.ceil(count / parsedLimit) : 1
         }
       }
     });
@@ -379,10 +379,67 @@ async function blockUser(req, res, next) {
   }
 }
 
+/**
+ * Manually mark a normal user's email OTP as verified
+ * Clears pending OTP fields and activates a 'pending' user
+ */
+async function verifyUserOtp(req, res, next) {
+  try {
+    const { id } = req.params;
+
+    const user = await User.findByPk(id, {
+      include: [{ model: Role, as: 'role' }]
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found.'
+      });
+    }
+
+    // Ensure this is a normal user
+    if (!user.role || user.role.type !== 'user') {
+      return res.status(403).json({
+        success: false,
+        message: 'This endpoint is only for managing normal users.'
+      });
+    }
+
+    if (user.status !== 'pending') {
+      return res.status(400).json({
+        success: false,
+        message: 'User OTP is already verified.'
+      });
+    }
+
+    await user.update({
+      status: 'active',
+      otp: null,
+      otpExpiresAt: null,
+      updatedBy: req.user.id
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'User OTP verified successfully.',
+      data: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        status: user.status
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   getAllUsers,
   getUserById,
   addUser,
   editUser,
-  blockUser
+  blockUser,
+  verifyUserOtp
 };
