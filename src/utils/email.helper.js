@@ -350,7 +350,7 @@ async function sendMt5CredentialsEmail(toEmail, name, login, mPassword, iPasswor
                   </tr>
                   <tr>
                     <td style="padding: 8px 0; color: #64748b; font-weight: 500;">Server:</td>
-                    <td style="padding: 8px 0; text-align: right; color: #0f172a; font-weight: 600;">Agile</td>
+                    <td style="padding: 8px 0; text-align: right; color: #0f172a; font-weight: 600;">${server || process.env.MT5_SERVER_NAME || 'Agile'}</td>
                   </tr>
                   <tr>
                     <td style="padding: 8px 0; color: #64748b; font-weight: 500;">Account Type (Group):</td>

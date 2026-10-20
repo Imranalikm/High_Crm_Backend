@@ -4,6 +4,8 @@ const { Mt5Account, User, CrmGroup } = require('../models');
 const { getToken, connectManager } = require('../utils/tokenFetch');
 const { sendMt5CredentialsEmail, sendMt5PasswordUpdateEmail } = require('../utils/email.helper');
 
+const MT5_SERVER_NAME = process.env.MT5_SERVER_NAME || 'Agile';
+
 
 // Generate random password
 function generateRandomPassword(length = 10) {
@@ -78,7 +80,7 @@ const createMT5Account = async (req, res) => {
         iPassword: iPassword,
         createdBy: req.user.id,
         status: 'PENDING',
-        server: 'Agile'
+        server: MT5_SERVER_NAME
       });
     } catch (dbErr) {
       console.error('Failed to create initial DB record:', dbErr.message);
@@ -181,7 +183,7 @@ const createMT5Account = async (req, res) => {
       iPassword,
       groupName,
       leverage,
-      'Agile'
+      MT5_SERVER_NAME
     ).catch(err => {
       console.error(`[MT5 Create] Failed to send MT5 credentials email to ${email}:`, err.message);
     });
