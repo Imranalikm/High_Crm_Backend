@@ -32,6 +32,11 @@ const createDeposit = async (req, res) => {
       return res.status(404).json({ message: 'MT5 account not found.' });
     }
 
+    if (mt5Account.status !== 'LIVE') {
+      await transaction.rollback();
+      return res.status(400).json({ message: 'Deposits are only allowed on live MT5 accounts.' });
+    }
+
     if (!isAdmin && mt5Account.groupName) {
       const crmGroup = await CrmGroup.findOne({ where: { name: mt5Account.groupName }, transaction });
       if (crmGroup && crmGroup.minDeposit !== null && crmGroup.minDeposit !== undefined) {
