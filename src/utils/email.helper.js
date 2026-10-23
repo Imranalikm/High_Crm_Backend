@@ -8,6 +8,13 @@ const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'mail.smatams.com',
   port: smtpPort,
   secure: smtpPort === 465, // SSL on 465, STARTTLS on 587
+  // Reuse one connection: the SMTP host throttles concurrent connections per IP
+  pool: true,
+  maxConnections: 1,
+  // The host is slow to greet (~12s), so allow headroom without nodemailer's 2 min default
+  connectionTimeout: 30000,
+  greetingTimeout: 30000,
+  socketTimeout: 60000,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,

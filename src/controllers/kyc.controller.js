@@ -234,7 +234,72 @@ async function approveKyc(req, res, next) {
     const targetName = kyc.fullName || (kyc.user && kyc.user.name);
     
     if (targetEmail) {
-      await sendKycApprovalEmail(targetEmail, targetName);
+      // Send in background so a slow SMTP server does not delay the response
+      sendKycApprovalEmail(targetEmail, targetName);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'KYC approved successfully.',
+      data: { kyc }
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Approve KYC by user ID (admin) — allows manual verification without documents.
+ * Creates the KYC record if the user has never started one.
+ */
+async function approveKycByUser(req, res, next) {
+  try {
+    const user = await User.findByPk(req.params.userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found.'
+      });
+    }
+
+    let kyc = await Kyc.findOne({ where: { userId: user.id } });
+
+    if (kyc && kyc.status === 'approved') {
+      return res.status(400).json({
+        success: false,
+        message: 'KYC is already approved.'
+      });
+    }
+
+    if (!kyc) {
+      kyc = await Kyc.create({
+        userId: user.id,
+        fullName: user.name,
+        email: user.email,
+        phone: user.phone,
+        country: user.country,
+        status: 'draft',
+        createdBy: req.user.id,
+        updatedBy: req.user.id
+      });
+    }
+
+    await kyc.update({
+      status: 'approved',
+      rejectionReason: null,
+      reviewedBy: req.user.id,
+      reviewedAt: new Date(),
+      updatedBy: req.user.id
+    });
+
+    // Send KYC approval email to the user
+    const targetEmail = kyc.email || user.email;
+    const targetName = kyc.fullName || user.name;
+
+    if (targetEmail) {
+      // Send in background so a slow SMTP server does not delay the response
+      sendKycApprovalEmail(targetEmail, targetName);
     }
 
     return res.status(200).json({
@@ -294,5 +359,6 @@ module.exports = {
   listKyc,
   getKycById,
   approveKyc,
+  approveKycByUser,
   rejectKyc
 };

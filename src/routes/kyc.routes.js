@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { listKyc, getKycById, approveKyc, rejectKyc } = require('../controllers/kyc.controller');
+const { listKyc, getKycById, approveKyc, approveKycByUser, rejectKyc } = require('../controllers/kyc.controller');
 
 const authenticateToken = require('../middlewares/auth.middleware');
 const requirePermission = require('../middlewares/rbac.middleware');
@@ -12,6 +12,7 @@ router.use(authenticateToken);
 router.get('/', requirePermission('users', 'view'), listKyc);
 router.get('/:id', requirePermission('users', 'view'), getKycById);
 router.put('/:id/approve', requirePermission('users', 'approve'), approveKyc);
+router.put('/user/:userId/approve', requirePermission('users', 'approve'), approveKycByUser);
 router.put('/:id/reject', requirePermission('users', 'approve'), rejectKyc);
 
 module.exports = router;
