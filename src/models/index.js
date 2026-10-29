@@ -15,6 +15,7 @@ const NotificationSetting = require('./NotificationSetting');
 const NotificationTemplate = require('./NotificationTemplate');
 const AppNotification = require('./AppNotification');
 const BankAccount = require('./BankAccount');
+const DemoAccountSetting = require('./DemoAccountSetting');
 
 // User <-> Role association
 User.belongsTo(Role, { foreignKey: 'roleId', as: 'role' });
@@ -119,5 +120,6 @@ module.exports = {
   NotificationSetting,
   NotificationTemplate,
   AppNotification,
-  BankAccount
+  BankAccount,
+  DemoAccountSetting
 };

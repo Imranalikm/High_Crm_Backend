@@ -2,16 +2,12 @@ const axios = require('axios');
 const { Op } = require('sequelize');
 const { Mt5Account, User, CrmGroup } = require('../models');
 const { getToken, connectManager } = require('../utils/tokenFetch');
+const { mt5BalanceOperation } = require('../utils/mt5Balance');
 const { sendMt5CredentialsEmail, sendMt5PasswordUpdateEmail } = require('../utils/email.helper');
+const { getDemoSettingsRecord } = require('./demoSetting.controller');
 const VALID_COUNTRIES = require('../utils/countries.constant');
 
 const MT5_SERVER_NAME = process.env.MT5_SERVER_NAME || 'Agile';
-
-// Demo account defaults
-const DEMO_MT5_GROUP = process.env.DEMO_MT5_GROUP || 'STL\\3492\\demo.grp1';
-const DEMO_BALANCE = 0;
-const DEMO_LEVERAGE = '1:100';
-const DEMO_COOLDOWN_MS = 24 * 60 * 60 * 1000; // one demo account per email per 24h
 
 
 // Generate random password
@@ -249,20 +245,32 @@ const createDemoMT5Account = async (req, res) => {
       });
     }
 
-    // Abuse guard: one demo account per email per cooldown window
-    const recent = await Mt5Account.findOne({
-      where: {
-        accountType: 'DEMO',
-        contactEmail: email,
-        status: { [Op.ne]: 'FAILED' },
-        createdAt: { [Op.gte]: new Date(Date.now() - DEMO_COOLDOWN_MS) }
-      }
-    });
-    if (recent) {
-      return res.status(429).json({
-        success: false,
-        message: 'A demo account was already created for this email in the last 24 hours. Please check your inbox.'
+    // Admin-configured demo settings (group, balance, leverage, cooldown)
+    const settings = await getDemoSettingsRecord();
+    if (!settings.enabled) {
+      return res.status(403).json({ success: false, message: 'Demo account registration is currently disabled.' });
+    }
+    const groupName = settings.mt5GroupName;
+    const leverage = settings.leverage || '1:100';
+    const initialBalance = parseFloat(settings.initialBalance) || 0;
+    const cooldownHours = Number(settings.cooldownHours) || 0;
+
+    // Abuse guard: one demo account per email per cooldown window (0 = unlimited)
+    if (cooldownHours > 0) {
+      const recent = await Mt5Account.findOne({
+        where: {
+          accountType: 'DEMO',
+          contactEmail: email,
+          status: { [Op.ne]: 'FAILED' },
+          createdAt: { [Op.gte]: new Date(Date.now() - cooldownHours * 60 * 60 * 1000) }
+        }
       });
+      if (recent) {
+        return res.status(429).json({
+          success: false,
+          message: `A demo account was already created for this email in the last ${cooldownHours} hours. Please check your inbox.`
+        });
+      }
     }
 
     const mPassword = generateRandomPassword();
@@ -276,9 +284,9 @@ const createDemoMT5Account = async (req, res) => {
       contactEmail: email,
       contactPhone: phone,
       contactCountry: country,
-      groupName: DEMO_MT5_GROUP,
-      leverage: DEMO_LEVERAGE,
-      balance: DEMO_BALANCE,
+      groupName,
+      leverage,
+      balance: 0,
       mPassword,
       iPassword,
       createdBy: null,
@@ -289,11 +297,11 @@ const createDemoMT5Account = async (req, res) => {
     let result;
     try {
       result = await provisionOnMt5({
-        groupName: DEMO_MT5_GROUP,
+        groupName,
         name,
         country,
-        balance: DEMO_BALANCE,
-        leverage: DEMO_LEVERAGE,
+        balance: 0,
+        leverage,
         mPassword,
         iPassword
       });
@@ -309,14 +317,29 @@ const createDemoMT5Account = async (req, res) => {
 
     await savedAccount.update({ accountid: result.accountid, status: 'LIVE' });
 
+    // Credit the configured initial balance through the MT5 deposit API (not recorded as a Deposit)
+    let creditedBalance = 0;
+    if (initialBalance > 0) {
+      try {
+        await mt5BalanceOperation(result.accountid, initialBalance, 'Demo initial balance');
+        creditedBalance = initialBalance;
+        await savedAccount.update({ balance: creditedBalance });
+      } catch (err) {
+        console.warn(
+          `[MT5 Demo] Account ${result.accountid} created but initial balance credit failed:`,
+          err.response?.data || err.message
+        );
+      }
+    }
+
     sendMt5CredentialsEmail(
       email,
       name,
       result.accountid,
       mPassword,
       iPassword,
-      DEMO_MT5_GROUP,
-      DEMO_LEVERAGE,
+      groupName,
+      leverage,
       MT5_SERVER_NAME,
       true
     ).catch(err => {
@@ -329,9 +352,9 @@ const createDemoMT5Account = async (req, res) => {
       data: {
         login: result.accountid,
         server: MT5_SERVER_NAME,
-        groupName: DEMO_MT5_GROUP,
-        leverage: DEMO_LEVERAGE,
-        balance: DEMO_BALANCE,
+        groupName,
+        leverage,
+        balance: creditedBalance,
         mPassword,
         iPassword
       }
@@ -343,6 +366,70 @@ const createDemoMT5Account = async (req, res) => {
       console.error('Error creating MT5 demo account:', err.message);
     }
     return res.status(502).json({ success: false, message: 'Could not create demo account. Please try again later.' });
+  }
+};
+
+/**
+ * Public: whether demo account registration is enabled (used by the login page).
+ */
+const getDemoStatus = async (req, res) => {
+  try {
+    const settings = await getDemoSettingsRecord();
+    return res.status(200).json({ success: true, data: { enabled: Boolean(settings.enabled) } });
+  } catch (err) {
+    console.error('Error fetching demo status:', err.message);
+    return res.status(500).json({ success: false, message: 'Internal Server Error' });
+  }
+};
+
+/**
+ * Admin: add (positive) or deduct (negative) balance on a DEMO account.
+ * Uses the MT5 deposit API; no Deposit record is created.
+ */
+const adjustDemoBalance = async (req, res) => {
+  try {
+    const amount = Number(req.body.amount);
+    const comment = String(req.body.comment || '').trim() || 'Demo balance adjustment';
+
+    if (!Number.isFinite(amount) || amount === 0) {
+      return res.status(400).json({ success: false, message: 'Amount must be a non-zero number.' });
+    }
+
+    const account = await Mt5Account.findOne({ where: { accountid: String(req.params.accountid) } });
+    if (!account) {
+      return res.status(404).json({ success: false, message: 'MT5 account not found.' });
+    }
+    if (account.accountType !== 'DEMO') {
+      return res.status(400).json({ success: false, message: 'Balance adjustments here are only allowed for demo accounts.' });
+    }
+    if (account.status !== 'LIVE') {
+      return res.status(400).json({ success: false, message: 'Demo account is not active on MT5.' });
+    }
+
+    const currentBalance = parseFloat(account.balance) || 0;
+    if (amount < 0 && Math.abs(amount) > currentBalance) {
+      return res.status(400).json({ success: false, message: `Cannot deduct more than the current balance (${currentBalance.toFixed(2)}).` });
+    }
+
+    const { dealId } = await mt5BalanceOperation(account.accountid, amount, comment);
+
+    const newBalance = Math.round((currentBalance + amount) * 100) / 100;
+    await account.update({ balance: newBalance });
+
+    console.log(`[MT5 Demo] Balance ${amount > 0 ? 'added' : 'deducted'} on ${account.accountid}: ${amount} by admin ${req.user.id}`);
+
+    return res.status(200).json({
+      success: true,
+      message: amount > 0 ? 'Demo balance added.' : 'Demo balance deducted.',
+      data: { balance: newBalance, dealId }
+    });
+  } catch (err) {
+    if (err.response) {
+      console.error('Error adjusting demo balance. Gateway responded with:', err.response.data);
+      return res.status(502).json({ success: false, message: 'MT5 Gateway Error', details: err.response.data });
+    }
+    console.error('Error adjusting demo balance:', err.message);
+    return res.status(500).json({ success: false, message: 'Internal Server Error' });
   }
 };
 
@@ -529,6 +616,8 @@ const updateMT5Password = async (req, res) => {
 module.exports = {
   createMT5Account,
   createDemoMT5Account,
+  getDemoStatus,
+  adjustDemoBalance,
   getMT5Accounts,
   getMT5AccountByLogin,
   updateMT5Password
