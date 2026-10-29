@@ -29,6 +29,11 @@ const createWithdrawal = async (req, res) => {
       return res.status(404).json({ message: 'MT5 account not found.' });
     }
 
+    if (mt5Account.accountType === 'DEMO') {
+      await transaction.rollback();
+      return res.status(400).json({ message: 'Withdrawals are not allowed on demo MT5 accounts.' });
+    }
+
     // createdFor user (if admin), or self (if user)
     const createdFor = isAdmin ? userId : req.user.id;
     if (!createdFor) {

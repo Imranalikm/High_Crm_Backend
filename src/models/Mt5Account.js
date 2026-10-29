@@ -9,7 +9,28 @@ const Mt5Account = sequelize.define('Mt5Account', {
   },
   userId: {
     type: DataTypes.INTEGER,
-    allowNull: false
+    allowNull: true // null for public demo accounts (no CRM user)
+  },
+  accountType: {
+    type: DataTypes.STRING,
+    defaultValue: 'LIVE' // 'LIVE' | 'DEMO'
+  },
+  // Contact details for demo accounts created without a CRM user
+  contactName: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  contactEmail: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  contactPhone: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  contactCountry: {
+    type: DataTypes.STRING,
+    allowNull: true
   },
   accountid: {
     type: DataTypes.STRING,

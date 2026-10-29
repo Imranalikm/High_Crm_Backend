@@ -209,13 +209,15 @@ async function sendVerificationSuccessEmail(toEmail, name) {
  * @param {string} groupName - CRM/MT5 Group Name
  * @param {string} leverage - Leverage
  * @param {string} server - MT5 Server name
+ * @param {boolean} [isDemo=false] - Whether this is a demo account
  */
-async function sendMt5CredentialsEmail(toEmail, name, login, mPassword, iPassword, groupName, leverage, server) {
+async function sendMt5CredentialsEmail(toEmail, name, login, mPassword, iPassword, groupName, leverage, server, isDemo = false) {
+  const accountLabel = isDemo ? 'MT5 Demo Account' : 'MT5 Trading Account';
   const portalUrl = process.env.CLIENT_PORTAL_URL || 'http://localhost:5173';
   const mailOptions = {
     from: `"Smatams" <${process.env.EMAIL_USER}>`,
     to: toEmail,
-    subject: 'Smatams - Your MT5 Trading Account Credentials',
+    subject: `Smatams - Your ${accountLabel} Credentials`,
     html: `
       <!DOCTYPE html>
       <html>
@@ -331,9 +333,9 @@ async function sendMt5CredentialsEmail(toEmail, name, login, mPassword, iPasswor
               <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;">Smatams Trading</h1>
             </div>
             <div class="content">
-              <h2>Your MT5 Trading Account is Ready!</h2>
+              <h2>Your ${accountLabel} is Ready!</h2>
               <p>Hello ${name || 'Trader'},</p>
-              <p>Your MetaTrader 5 (MT5) trading account has been successfully created. Here are your account credentials and connection details:</p>
+              <p>Your MetaTrader 5 (MT5) ${isDemo ? 'demo' : 'trading'} account has been successfully created. Here are your account credentials and connection details:</p>
               
               <div class="cred-card">
                 <div class="cred-title">Account Details</div>

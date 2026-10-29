@@ -32,7 +32,7 @@ const createDeposit = async (req, res) => {
       return res.status(404).json({ message: 'MT5 account not found.' });
     }
 
-    if (mt5Account.status !== 'LIVE') {
+    if (mt5Account.status !== 'LIVE' || mt5Account.accountType === 'DEMO') {
       await transaction.rollback();
       return res.status(400).json({ message: 'Deposits are only allowed on live MT5 accounts.' });
     }

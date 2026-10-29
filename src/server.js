@@ -25,8 +25,20 @@ async function startServer() {
       try {
         await sequelize.query(`ALTER TABLE "bank_accounts" ADD COLUMN IF NOT EXISTS "editStatus" VARCHAR(255) DEFAULT 'none';`);
       } catch(e) {}
-      
-      console.log('[Database] Checked columns on tickets and bank_accounts.');
+
+      // Demo account support on mt5_accounts
+      try {
+        await sequelize.query('ALTER TABLE "mt5_accounts" ALTER COLUMN "userId" DROP NOT NULL;');
+        await sequelize.query(`ALTER TABLE "mt5_accounts" ADD COLUMN IF NOT EXISTS "accountType" VARCHAR(255) DEFAULT 'LIVE';`);
+        await sequelize.query('ALTER TABLE "mt5_accounts" ADD COLUMN IF NOT EXISTS "contactName" VARCHAR(255);');
+        await sequelize.query('ALTER TABLE "mt5_accounts" ADD COLUMN IF NOT EXISTS "contactEmail" VARCHAR(255);');
+        await sequelize.query('ALTER TABLE "mt5_accounts" ADD COLUMN IF NOT EXISTS "contactPhone" VARCHAR(255);');
+        await sequelize.query('ALTER TABLE "mt5_accounts" ADD COLUMN IF NOT EXISTS "contactCountry" VARCHAR(255);');
+      } catch(e) {
+        console.warn('[Database] mt5_accounts demo columns warning:', e.message);
+      }
+
+      console.log('[Database] Checked columns on tickets, bank_accounts and mt5_accounts.');
     } catch (e) {
       console.warn('[Database] Optional sync warning:', e.message);
     }
