@@ -1,19 +1,24 @@
 const axios = require('axios');
 const { getToken, connectManager } = require('./tokenFetch');
 
+// Gateway TxnType enum (see /swagger BalanceOP.transactionType)
+const TXN_DEPOSIT = 0;
+const TXN_WITHDRAWAL = 1;
+
 /**
  * Credit (positive amount) or debit (negative amount) an MT5 account balance
- * via the gateway balanceOP endpoint. Throws on gateway/network errors.
+ * via the gateway balanceOP endpoint. The gateway only accepts positive amounts;
+ * the direction is set by transactionType. Throws on gateway/network errors.
  * @returns {{ dealId: string|null, data: object }}
  */
 async function mt5BalanceOperation(loginid, amount, comment = '') {
   const token = await getToken();
   const mt5Url = `${process.env.EXTERNAL_API_BASE_URL}/Home/balanceOP`;
+  const value = Number(amount);
   const payload = {
     loginid: Number(loginid),
-    amount: Number(amount),
-    txnType: 0,
-    description: comment,
+    amount: Math.abs(value),
+    transactionType: value < 0 ? TXN_WITHDRAWAL : TXN_DEPOSIT,
     comment
   };
   const config = { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } };
