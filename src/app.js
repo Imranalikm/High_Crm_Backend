@@ -49,9 +49,10 @@ if (process.env.NODE_ENV !== 'test') {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve uploaded files
+// Serve uploaded files (login + ownership/admin check required)
 const path = require('path');
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+const requireUploadAccess = require('./middlewares/uploadAccess.middleware');
+app.use('/uploads', requireUploadAccess, express.static(path.join(process.cwd(), 'uploads')));
 
 // Health Check Endpoint
 app.get('/api/health', (req, res) => {

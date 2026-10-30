@@ -86,7 +86,7 @@ const createDeposit = async (req, res) => {
         mt5DealId:     mt5DealId,
         note:          !isAdmin ? note || ''  : undefined,
         comment:        isAdmin ? comment || '' : undefined,
-        depositProof:  !isAdmin ? req.file?.path || '' : undefined,
+        depositProof:  !isAdmin && req.file ? `/uploads/deposits/${req.file.filename}` : (!isAdmin ? '' : undefined),
         createdBy:     req.user.id,
         createdFor,
         role:          isAdmin ? 'admin' : 'user',
