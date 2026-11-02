@@ -2,6 +2,51 @@ const axios = require('axios');
 const { Deposit, Mt5Account, User, sequelize, CrmGroup } = require('../models');
 const { getToken, connectManager } = require('../utils/tokenFetch');
 const { Op } = require('sequelize');
+const geoip = require('geoip-lite');
+const { BANK_ACCOUNTS, UPI } = require('../config/paymentDetails');
+
+const INDIA_NAMES = ['in', 'ind', 'india'];
+
+/**
+ * Decide which company bank account a client should see.
+ * IP country first; if that can't be resolved, the country on the client's profile;
+ * otherwise the international account.
+ */
+function resolveBankRegion(req) {
+  const ip = (req.ip || '').replace(/^::ffff:/, '');
+  const geo = ip ? geoip.lookup(ip) : null;
+  if (geo && geo.country) {
+    return { region: geo.country === 'IN' ? 'IN' : 'INTL', country: geo.country, source: 'ip' };
+  }
+
+  const profileCountry = (req.user?.country || '').trim();
+  if (profileCountry) {
+    return {
+      region: INDIA_NAMES.includes(profileCountry.toLowerCase()) ? 'IN' : 'INTL',
+      country: profileCountry,
+      source: 'profile'
+    };
+  }
+
+  return { region: 'INTL', country: null, source: 'default' };
+}
+
+/* ────────────────────────────────────────────────────────────
+   PAYMENT DETAILS (company accounts shown on the deposit page)
+   ─────────────────────────────────────────────────────────── */
+const getPaymentDetails = async (req, res) => {
+  const { region, country, source } = resolveBankRegion(req);
+  res.json({
+    success: true,
+    data: {
+      region,
+      detectedCountry: country,
+      detectedFrom: source,
+      bank: BANK_ACCOUNTS[region],
+      upi: UPI
+    }
+  });
+};
 
 /* ────────────────────────────────────────────────────────────
    CREATE
@@ -76,15 +121,22 @@ const createDeposit = async (req, res) => {
       await mt5Account.save({ transaction });
     }
 
+    /* Record which company account the client was shown for bank transfers */
+    let userNote = note || '';
+    if (!isAdmin && type === 'bank') {
+      const { region } = resolveBankRegion(req);
+      userNote = `${userNote} (${region === 'IN' ? 'IN' : 'International'} bank account)`.trim();
+    }
+
     /* Save deposit record */
     const deposit = await Deposit.create(
       {
         accountId: accountId.toString(),
         amount,
         type:          type,
-        transactionId: !isAdmin && (type === 'bank' || type === 'upi' || type === 'online') ? transactionId : null,
+        transactionId: !isAdmin && (type === 'bank' || type === 'upi' || type === 'online' || type === 'crypto') ? transactionId : null,
         mt5DealId:     mt5DealId,
-        note:          !isAdmin ? note || ''  : undefined,
+        note:          !isAdmin ? userNote : undefined,
         comment:        isAdmin ? comment || '' : undefined,
         depositProof:  !isAdmin && req.file ? `/uploads/deposits/${req.file.filename}` : (!isAdmin ? '' : undefined),
         createdBy:     req.user.id,
@@ -359,6 +411,8 @@ const getDepositsByUserId = async (req, res) => {
 };
 
 module.exports = {
+  getPaymentDetails,
+  resolveBankRegion,
   createDeposit,
   approveDeposit,
   rejectDeposit,

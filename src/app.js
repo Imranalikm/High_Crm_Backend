@@ -12,6 +12,10 @@ const errorHandler = require('./middlewares/error.middleware');
 
 const app = express();
 
+// Behind a reverse proxy, read the client IP from X-Forwarded-For (number of trusted proxy hops).
+// Set TRUST_PROXY=0 in .env if the app is ever exposed directly, so clients cannot spoof their IP.
+app.set('trust proxy', Number(process.env.TRUST_PROXY ?? 1));
+
 // Security Middlewares
 // Disabling contentSecurityPolicy allows the Swagger UI assets (CSS/JS) to render correctly.
 app.use(helmet({

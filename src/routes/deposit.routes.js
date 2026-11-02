@@ -10,6 +10,7 @@ const { depositUpload } = require('../config/upload');
 router.post('/', authenticateToken, depositUpload.single('depositProof'), depositController.createDeposit);
 
 // User endpoints
+router.get('/payment-details', authenticateToken, depositController.getPaymentDetails);
 router.get('/my-deposits', authenticateToken, depositController.getDepositsByUserId);
 
 // Admin endpoints

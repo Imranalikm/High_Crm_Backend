@@ -9,39 +9,44 @@ const fetchAndStoreMt5Groups = async (req, res, next) => {
   try {
     const token = await getToken();
 
-    let response = await axios.get(`${process.env.EXTERNAL_API_BASE_URL}/Home/groupInfo/*`, {
+    const fetchGroups = () => axios.get(`${process.env.EXTERNAL_API_BASE_URL}/Home/groupInfo/*`, {
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       }
     });
 
-    console.log("🛠️ INITIAL MT5 API RESPONSE:", typeof response.data === 'string' ? response.data : JSON.stringify(response.data));
+    // The gateway reports "Manager is not connected" either in a 200 body or as an
+    // HTTP 400 error (axios throws on 400), so check both before retrying.
+    const isManagerNotConnected = (data) => {
+      const str = typeof data === 'string' ? data : JSON.stringify(data || {});
+      return str.toLowerCase().includes('manager is not connected');
+    };
 
-    let { groups, message } = response.data;
-    let groupDeatails = groups; // Map the 'groups' array to our variable
+    let response;
+    let needsLogin = false;
+    try {
+      response = await fetchGroups();
+      console.log("🛠️ INITIAL MT5 API RESPONSE:", typeof response.data === 'string' ? response.data : JSON.stringify(response.data));
+      needsLogin = isManagerNotConnected(response.data);
+    } catch (err) {
+      if (err.response && isManagerNotConnected(err.response.data)) {
+        needsLogin = true;
+      } else {
+        throw err;
+      }
+    }
 
-    // Check if manager is not connected (case-insensitive)
-    const responseDataStr = typeof response.data === 'string' 
-      ? response.data.toLowerCase() 
-      : JSON.stringify(response.data || {}).toLowerCase();
-      
-    const isManagerNotConnected = responseDataStr.includes('manager is not connected');
-
-    if (isManagerNotConnected) {
+    if (needsLogin) {
       console.log('Manager not connected. Attempting login...');
       await connectManager(token);
-      
+
       // Retry fetching groups
-      response = await axios.get(`${process.env.EXTERNAL_API_BASE_URL}/Home/groupInfo/*`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        }
-      });
+      response = await fetchGroups();
       console.log("🛠️ RETRY MT5 API RESPONSE:", typeof response.data === 'string' ? response.data : JSON.stringify(response.data));
-      groupDeatails = response.data.groups;
     }
+
+    let groupDeatails = response.data.groups; // Map the 'groups' array to our variable
 
     if (!groupDeatails || !Array.isArray(groupDeatails)) {
       console.error("🚨 CRITICAL: Invalid format from MT5 API.");
