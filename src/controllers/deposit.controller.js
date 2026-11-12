@@ -193,18 +193,34 @@ const approveDeposit = async (req, res) => {
     const mt5Url = `${process.env.EXTERNAL_API_BASE_URL}/Home/balanceOP`;
     const payload = { loginid: Number(deposit.accountId), amount: Number(deposit.amount), txnType: 0, description: deposit.note || '', comment: deposit.comment || '' };
     
+    console.log(`[approveDeposit] MT5 REQUEST deposit #${id} → POST ${mt5Url}`, payload);
+
+    const logMt5Error = (err) => {
+      console.error(`[approveDeposit] MT5 ERROR deposit #${id}:`, {
+        httpStatus: err.response?.status,
+        data: err.response?.data,
+        message: err.message,
+      });
+    };
+
     let mt5Response;
     try {
       mt5Response = await axios.post(mt5Url, payload, {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
       });
     } catch (err) {
+      logMt5Error(err);
       if (err.response && JSON.stringify(err.response.data).toLowerCase().includes('manager is not connected')) {
         console.log('Manager not connected. Attempting login...');
         await connectManager(token);
-        mt5Response = await axios.post(mt5Url, payload, {
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
-        });
+        try {
+          mt5Response = await axios.post(mt5Url, payload, {
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+          });
+        } catch (retryErr) {
+          logMt5Error(retryErr);
+          throw retryErr;
+        }
       } else {
         throw err;
       }
