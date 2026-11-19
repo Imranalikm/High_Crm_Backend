@@ -39,11 +39,29 @@ const initSocket = (server) => {
   io.on('connection', (socket) => {
     console.log(`[Socket.io] User connected: ${socket.user.id} (${socket.user.name})`);
 
+    // Personal room (live MT5 account updates for this user's own accounts)
+    socket.join(`user_${socket.user.id}`);
+
     // Join admin_room if applicable
     if (socket.user.role && socket.user.role.type !== 'user') {
       socket.join('admin_room');
       console.log(`[Socket.io] User ${socket.user.id} joined admin_room`);
     }
+
+    // Client asks for the current live MT5 snapshot (filtered to what it may see)
+    socket.on('mt5:snapshot', () => {
+      const mt5Stream = require('../services/mt5Stream'); // lazy: avoids circular require
+      socket.emit('mt5:accounts', mt5Stream.snapshotFor(socket.user));
+      socket.emit('mt5:status', mt5Stream.status());
+    });
+
+    // Admin asks for the full list of open MT5 positions
+    socket.on('mt5:positions:snapshot', () => {
+      if (!socket.user.role || socket.user.role.type === 'user') return;
+      const mt5Stream = require('../services/mt5Stream');
+      socket.emit('mt5:positions', { reset: true, upsert: mt5Stream.positionsSnapshotFor(socket.user), remove: [] });
+      socket.emit('mt5:status', mt5Stream.status());
+    });
 
     // Users and admins can join specific ticket rooms to receive real-time updates
     socket.on('join_ticket', (ticketId) => {

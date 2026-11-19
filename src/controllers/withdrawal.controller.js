@@ -2,6 +2,7 @@ const axios = require('axios');
 const { Withdrawal, Mt5Account, User, sequelize } = require('../models');
 const { getToken, connectManager } = require('../utils/tokenFetch');
 const { Op } = require('sequelize');
+const { emitFinanceUpdate } = require('../utils/financeEvents');
 
 const createWithdrawal = async (req, res) => {
   const transaction = await sequelize.transaction();
@@ -103,6 +104,7 @@ const createWithdrawal = async (req, res) => {
     );
 
     await transaction.commit();
+    emitFinanceUpdate('withdrawal', withdrawal);
 
     res.status(201).json({
       message: isAdmin
@@ -179,6 +181,7 @@ const approveWithdrawal = async (req, res) => {
     await withdrawal.save({ transaction });
 
     await transaction.commit();
+    emitFinanceUpdate('withdrawal', withdrawal);
 
     res.json({ message: 'Withdrawal approved.', withdrawal });
   } catch (err) {
@@ -213,6 +216,7 @@ const rejectWithdrawal = async (req, res) => {
     await withdrawal.save({ transaction });
 
     await transaction.commit();
+    emitFinanceUpdate('withdrawal', withdrawal);
 
     res.json({ message: 'Withdrawal rejected.', withdrawal });
   } catch (err) {

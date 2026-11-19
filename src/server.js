@@ -55,6 +55,11 @@ async function startServer() {
     // Initialize Socket.io
     initSocket(server);
 
+    // Bridge the MT5 live account feed (balance/equity/margin) to Socket.IO
+    require('./services/mt5Stream').start().catch((e) =>
+      console.error('[MT5 Stream] Failed to start:', e.message)
+    );
+
     // Start Express server listening
     server.listen(PORT, () => {
       console.log(`[Server] Server is running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode.`);

@@ -3,6 +3,7 @@ const { Deposit, Mt5Account, User, sequelize, CrmGroup } = require('../models');
 const { getToken, connectManager } = require('../utils/tokenFetch');
 const { Op } = require('sequelize');
 const geoip = require('geoip-lite');
+const { emitFinanceUpdate } = require('../utils/financeEvents');
 const { BANK_ACCOUNTS, UPI } = require('../config/paymentDetails');
 
 const INDIA_NAMES = ['in', 'ind', 'india'];
@@ -148,6 +149,7 @@ const createDeposit = async (req, res) => {
     );
 
     await transaction.commit();
+    emitFinanceUpdate('deposit', deposit);
 
     res.status(201).json({
       message: isAdmin
@@ -237,6 +239,7 @@ const approveDeposit = async (req, res) => {
     await deposit.save({ transaction });
 
     await transaction.commit();
+    emitFinanceUpdate('deposit', deposit);
 
     res.json({ message: 'Deposit approved and balance updated.', deposit });
   } catch (err) {
@@ -272,6 +275,7 @@ const rejectDeposit = async (req, res) => {
     await deposit.save({ transaction });
 
     await transaction.commit();
+    emitFinanceUpdate('deposit', deposit);
 
     res.json({ message: 'Deposit rejected.', deposit });
   } catch (err) {
@@ -304,6 +308,7 @@ const flagDeposit = async (req, res) => {
     await deposit.save({ transaction });
 
     await transaction.commit();
+    emitFinanceUpdate('deposit', deposit);
 
     res.json({ message: 'Deposit flagged.', deposit });
   } catch (err) {

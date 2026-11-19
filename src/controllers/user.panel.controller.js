@@ -1,4 +1,6 @@
+const { Op } = require('sequelize');
 const { User, Role, Module, Mt5Account } = require('../models');
+const mt5Stream = require('../services/mt5Stream');
 
 /**
  * Get user panel dashboard data
@@ -96,19 +98,43 @@ async function getWallet(req, res, next) {
       attributes: ['id', 'wallet_balance']
     });
 
+    // Only real, provisioned accounts. PENDING/FAILED rows carry a copy of the
+    // wallet balance from creation time and must not be counted.
     const mt5Accounts = await Mt5Account.findAll({
-      where: { userId: req.user.id },
-      attributes: ['balance']
+      where: {
+        userId: req.user.id,
+        status: 'LIVE',
+        accountid: { [Op.notLike]: 'PENDING-%' }
+      },
+      attributes: ['accountid', 'balance', 'groupName']
     });
 
     const walletBalance = user ? parseFloat(user.wallet_balance) || 0 : 0;
-    const mt5Balance = mt5Accounts.reduce((sum, acc) => sum + (parseFloat(acc.balance) || 0), 0);
+
+    // Prefer the live MT5 feed so this matches MT5 exactly; fall back to the DB copy
+    const accounts = mt5Accounts.map((acc) => {
+      const live = mt5Stream.liveFor(acc.accountid);
+      const balance = live ? Number(live.balance) || 0 : parseFloat(acc.balance) || 0;
+      return {
+        login: String(acc.accountid),
+        groupName: acc.groupName,
+        balance,
+        equity: live ? Number(live.equity) || 0 : balance,
+        isLive: !!live
+      };
+    });
+
+    const mt5Balance = accounts.reduce((sum, a) => sum + a.balance, 0);
+    const mt5Equity = accounts.reduce((sum, a) => sum + a.equity, 0);
 
     return res.status(200).json({
       success: true,
       data: {
         wallet_balance: walletBalance,
-        portfolio_balance: walletBalance + mt5Balance
+        mt5_balance: mt5Balance,
+        mt5_equity: mt5Equity,
+        portfolio_balance: walletBalance + mt5Balance,
+        accounts
       }
     });
   } catch (error) {
