@@ -11,6 +11,8 @@
  * The gateway token never leaves the backend.
  */
 const { Op } = require('sequelize');
+// `ws` package instead of Node's global WebSocket, so this works on Node 20 (global needs 22+)
+const WebSocket = require('ws');
 const { getToken } = require('../utils/tokenFetch');
 const { getIo } = require('../config/socket');
 const { Mt5Account } = require('../models');
@@ -127,7 +129,7 @@ function createFeed({ name, url, onMessage, onOpen, onDown }) {
     socket.onmessage = ({ data }) => {
       feed.lastMessageAt = Date.now();
       let msg;
-      try { msg = JSON.parse(data); } catch { return; }
+      try { msg = JSON.parse(String(data)); } catch { return; } // ws delivers a Buffer
       if (msg.type === 'status') {
         if (msg.mt5Connected === false) console.warn(`[MT5 Stream:${name}] Gateway reports MT5 disconnected`);
         return;
@@ -322,10 +324,6 @@ function status() {
 async function start() {
   if (started) return;
   started = true;
-  if (typeof WebSocket === 'undefined') {
-    console.error('[MT5 Stream] Global WebSocket not available (needs Node 22+). Live MT5 data disabled.');
-    return;
-  }
   await refreshOwners();
   setInterval(refreshOwners, OWNERS_REFRESH_MS);
   setInterval(flush, FLUSH_MS);
