@@ -16,6 +16,7 @@ const NotificationTemplate = require('./NotificationTemplate');
 const AppNotification = require('./AppNotification');
 const BankAccount = require('./BankAccount');
 const DemoAccountSetting = require('./DemoAccountSetting');
+const BalanceOperation = require('./BalanceOperation');
 
 // User <-> Role association
 User.belongsTo(Role, { foreignKey: 'roleId', as: 'role' });
@@ -103,6 +104,10 @@ User.hasMany(AppNotification, { as: 'notifications', foreignKey: 'userId' });
 User.hasMany(BankAccount, { foreignKey: 'userId', as: 'bankAccounts' });
 BankAccount.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
+// BalanceOperation associations
+BalanceOperation.belongsTo(User, { foreignKey: 'userId', as: 'client' });
+BalanceOperation.belongsTo(User, { foreignKey: 'createdBy', as: 'creator' });
+
 module.exports = {
   sequelize,
   User,
@@ -121,5 +126,6 @@ module.exports = {
   NotificationTemplate,
   AppNotification,
   BankAccount,
-  DemoAccountSetting
+  DemoAccountSetting,
+  BalanceOperation
 };

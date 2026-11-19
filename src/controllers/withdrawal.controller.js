@@ -1,6 +1,5 @@
-const axios = require('axios');
 const { Withdrawal, Mt5Account, User, sequelize } = require('../models');
-const { getToken, connectManager } = require('../utils/tokenFetch');
+const { mt5BalanceOperation, TXN } = require('../utils/mt5Balance');
 const { Op } = require('sequelize');
 const { emitFinanceUpdate } = require('../utils/financeEvents');
 const mt5Stream = require('../services/mt5Stream');
@@ -57,34 +56,8 @@ const createWithdrawal = async (req, res) => {
 
     if (isAdmin) {
       try {
-        const token = await getToken();
-        const mt5Url = `${process.env.EXTERNAL_API_BASE_URL}/Home/balanceOP`;
-        const payload = {
-          loginid: Number(accountId),
-          amount: -Math.abs(Number(amount)),
-          txnType: 0, 
-          description: note || '',
-          comment: comment || '',
-        };
-        
-        let mt5Response;
-        try {
-          mt5Response = await axios.post(mt5Url, payload, {
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
-          });
-          console.log('MT5 Server Response (Withdrawal):', mt5Response.data);
-        } catch (err) {
-          if (err.response && JSON.stringify(err.response.data).toLowerCase().includes('manager is not connected')) {
-            await connectManager(token);
-            mt5Response = await axios.post(mt5Url, payload, {
-              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
-            });
-            console.log('MT5 Server Response after reconnect (Withdrawal):', mt5Response.data);
-          } else {
-            console.error('MT5 Server Error (Withdrawal):', err.response?.data || err.message);
-            throw err;
-          }
-        }
+        // Gateway transactionType 1 = Withdrawal (amount sent positive)
+        await mt5BalanceOperation(accountId, -Math.abs(Number(amount)), comment || note || 'Withdrawal', TXN.WITHDRAWAL);
 
         mt5Account.balance = (parseFloat(mt5Account.balance) || 0) - Number(amount);
         await mt5Account.save({ transaction });
@@ -156,31 +129,11 @@ const approveWithdrawal = async (req, res) => {
       return res.status(400).json({ message: 'Insufficient MT5 balance.' });
     }
 
-    const token = await getToken();
-    const mt5Url = `${process.env.EXTERNAL_API_BASE_URL}/Home/balanceOP`;
-    const payload = {
-      loginid: Number(withdrawal.accountId),
-      amount: -Math.abs(Number(withdrawal.amount)),
-      txnType: 0,
-      description: withdrawal.note || '',
-      comment: '',
-    };
-    
-    let mt5Response;
-    try {
-      mt5Response = await axios.post(mt5Url, payload, {
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
-      });
-    } catch (err) {
-      if (err.response && JSON.stringify(err.response.data).toLowerCase().includes('manager is not connected')) {
-        await connectManager(token);
-        mt5Response = await axios.post(mt5Url, payload, {
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
-        });
-      } else {
-        throw err;
-      }
-    }
+    // Gateway transactionType 1 = Withdrawal (amount sent positive)
+    await mt5BalanceOperation(
+      withdrawal.accountId, -Math.abs(Number(withdrawal.amount)),
+      withdrawal.comment || withdrawal.note || 'Withdrawal', TXN.WITHDRAWAL,
+    );
 
     mt5Account.balance = (parseFloat(mt5Account.balance) || 0) - Number(withdrawal.amount);
     await mt5Account.save({ transaction });
@@ -241,6 +194,7 @@ const getWithdrawalsForAdmin = async (req, res) => {
     const where = {};
     if (status && status !== 'ALL') where.status = status.toLowerCase();
     if (method && method !== 'ALL') where.type = method.toLowerCase();
+    if (req.query.userId) where.createdFor = Number(req.query.userId);
 
     if (from || to) {
       const fromDate = from ? new Date(from) : null;

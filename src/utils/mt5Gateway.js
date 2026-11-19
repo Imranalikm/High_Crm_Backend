@@ -55,9 +55,10 @@ async function symbolInfo(symbol) {
 }
 
 /** Provisioned CRM accounts (optionally one login), with owner name. */
-async function crmAccounts(login) {
+async function crmAccounts(login, userId) {
   const where = { accountid: { [Op.notLike]: 'PENDING-%' }, status: 'LIVE' };
   if (login) where.accountid = String(login);
+  if (userId) where.userId = Number(userId);
   const rows = await Mt5Account.findAll({
     where,
     attributes: ['accountid', 'userId', 'accountType', 'contactName', 'groupName'],

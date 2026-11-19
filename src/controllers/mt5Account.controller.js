@@ -450,6 +450,7 @@ const getMT5Accounts = async (req, res) => {
       if (type === 'LIVE' || type === 'DEMO') {
         whereClause.accountType = type;
       }
+      if (req.query.userId) whereClause.userId = Number(req.query.userId);
     }
 
     const accounts = await Mt5Account.findAll({

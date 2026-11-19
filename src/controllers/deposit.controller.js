@@ -327,6 +327,7 @@ const getDepositsForAdmin = async (req, res) => {
     const where = {};
     if (status && status !== 'ALL') where.status = status.toLowerCase();
     if (method && method !== 'ALL') where.type  = method.toLowerCase();
+    if (req.query.userId) where.createdFor = Number(req.query.userId);
 
     /* optional date / time span */
     if (from || to) {

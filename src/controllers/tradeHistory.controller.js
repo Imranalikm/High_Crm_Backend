@@ -28,14 +28,14 @@ function computeProfit({ side, openPrice, closePrice, lots }, info) {
   };
 }
 
-/** GET /api/mt5-accounts/history/trades?from=YYYY-MM-DD&to=YYYY-MM-DD&login=123 */
+/** GET /api/mt5-accounts/history/trades?from=YYYY-MM-DD&to=YYYY-MM-DD&login=123&userId=6 */
 const getTradeHistory = async (req, res) => {
   try {
     const range = parseRange(req.query);
     if (range.error) return res.status(400).json({ success: false, message: range.error });
     const { from, to } = range;
 
-    const byLogin = await crmAccounts(req.query.login);
+    const byLogin = await crmAccounts(req.query.login, req.query.userId);
     const logins = [...byLogin.keys()].map(Number).filter(Number.isFinite);
     if (!logins.length) return res.json({ success: true, data: [], openPositionIds: [], range: { from: ymd(from), to: ymd(to) } });
 

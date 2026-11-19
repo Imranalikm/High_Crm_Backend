@@ -15,6 +15,7 @@ const withdrawalRoutes = require('./withdrawal.routes');
 const notificationRoutes = require('./notification.routes');
 const bankAccountRoutes = require('./bankAccount.routes');
 const demoSettingRoutes = require('./demoSetting.routes');
+const balanceOperationRoutes = require('./balanceOperation.routes');
 
 router.use('/auth', authRoutes);
 router.use('/roles', roleRoutes);
@@ -31,6 +32,7 @@ router.use('/withdrawals', withdrawalRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/bank-accounts', bankAccountRoutes);
 router.use('/demo-settings', demoSettingRoutes);
+router.use('/balance-operations', balanceOperationRoutes);
 
 // Root API healthcheck endpoint
 
