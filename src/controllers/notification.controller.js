@@ -187,6 +187,23 @@ async function getUnreadNotifications(req, res, next) {
 }
 
 /**
+ * Recent notifications (read and unread) for the signed-in user, plus the unread count.
+ * GET /notifications/my?limit=30
+ */
+async function getMyNotifications(req, res, next) {
+  try {
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 30, 1), 100);
+    const [notifications, unreadCount] = await Promise.all([
+      AppNotification.findAll({ where: { userId: req.user.id }, order: [['createdAt', 'DESC']], limit }),
+      AppNotification.count({ where: { userId: req.user.id, isRead: false } }),
+    ]);
+    return res.status(200).json({ success: true, data: notifications, unreadCount });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
  * Mark a specific notification as read
  */
 async function markAsRead(req, res, next) {
@@ -248,6 +265,7 @@ module.exports = {
   updateTemplate,
   deleteTemplate,
   getUnreadNotifications,
+  getMyNotifications,
   markAsRead,
   markAllAsRead
 };

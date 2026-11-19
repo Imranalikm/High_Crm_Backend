@@ -22,8 +22,7 @@ const TXN = Object.freeze({
  *   amount a Withdrawal (1). Both are sent as a positive amount; the type sets
  *   the direction.
  * - With an explicit Deposit/Withdrawal type the amount is also sent positive.
- * - Any other type (Credit, Bonus, Charge, ...) is sent with its sign, so a
- *   negative amount removes credit/bonus etc.
+ * - Any other type (Credit, Bonus, Charge, ...) is sent as given.
  *
  * Throws on gateway/network errors.
  * @returns {{ dealId: string|null, data: object }}

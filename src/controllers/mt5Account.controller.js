@@ -7,6 +7,7 @@ const { sendMt5CredentialsEmail, sendMt5PasswordUpdateEmail } = require('../util
 const { getDemoSettingsRecord } = require('./demoSetting.controller');
 const VALID_COUNTRIES = require('../utils/countries.constant');
 const mt5Stream = require('../services/mt5Stream');
+const { notifyUser } = require('../utils/notifyUser');
 
 const MT5_SERVER_NAME = process.env.MT5_SERVER_NAME || 'Agile';
 
@@ -190,6 +191,11 @@ const createMT5Account = async (req, res) => {
       status: 'LIVE'
     });
     mt5Stream.refreshOwners(); // start streaming live data for the new login
+    notifyUser(savedAccount.userId, {
+      type: 'account',
+      title: 'MT5 account ready',
+      message: `Your live MT5 account #${result.accountid} (${groupName}) is active. Login details have been emailed to you.`,
+    });
 
     // Send MT5 account creation credentials email (non-blocking)
     sendMt5CredentialsEmail(
@@ -319,6 +325,11 @@ const createDemoMT5Account = async (req, res) => {
 
     await savedAccount.update({ accountid: result.accountid, status: 'LIVE' });
     mt5Stream.refreshOwners();
+    notifyUser(savedAccount.userId, {
+      type: 'account',
+      title: 'Demo account ready',
+      message: `Your demo MT5 account #${result.accountid} is active.`,
+    });
 
     // Credit the configured initial balance through the MT5 deposit API (not recorded as a Deposit)
     let creditedBalance = 0;

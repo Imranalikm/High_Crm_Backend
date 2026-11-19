@@ -40,7 +40,8 @@ const getTypes = (req, res) => {
 /** POST /balance-operations  { accountId, type, amount (signed), comment?, note? } */
 const createBalanceOperation = async (req, res) => {
   const type = Number(req.body.type);
-  const amount = Math.round(Number(req.body.amount) * 100) / 100;
+  // No add/deduct: the amount goes to MT5 as entered (positive) with its type
+  const amount = Math.round(Math.abs(Number(req.body.amount)) * 100) / 100;
   const accountId = String(req.body.accountId || '').trim();
   const note = String(req.body.note || '').trim() || null;
 
@@ -49,7 +50,7 @@ const createBalanceOperation = async (req, res) => {
   }
   if (!accountId) return res.status(400).json({ success: false, message: 'MT5 account is required.' });
   if (!Number.isFinite(amount) || amount === 0) {
-    return res.status(400).json({ success: false, message: 'Amount must be a non-zero number.' });
+    return res.status(400).json({ success: false, message: 'Amount must be greater than 0.' });
   }
 
   const comment = String(req.body.comment || '').trim().slice(0, 31) || OPERATION_TYPES[type];
@@ -77,15 +78,11 @@ const createBalanceOperation = async (req, res) => {
       return res.status(502).json({ success: false, message: `MT5 rejected the operation: ${message}`, data: shape(failed) });
     }
 
-    // Credit moves the credit line, everything else the balance. The live feed
-    // persists the real balance anyway; this keeps the DB copy close meanwhile.
-    if (type !== TXN.CREDIT) {
-      await account.update({ balance: Math.round(((parseFloat(account.balance) || 0) + amount) * 100) / 100 });
-    }
+    // The CRM balance copy is refreshed from the live MT5 feed (mt5Stream persists it)
 
     const op = await BalanceOperation.create({ ...base, dealId, status: 'completed' });
     console.log(`[BalanceOp] ${OPERATION_TYPES[type]} ${amount} on ${accountId} by admin ${req.user.id} (deal ${dealId})`);
-    emitFinanceUpdate('balance_operation', { ...op.toJSON(), createdFor: op.userId });
+    emitFinanceUpdate('balance_operation', { ...op.toJSON(), createdFor: op.userId, typeLabel: OPERATION_TYPES[type] });
 
     return res.status(201).json({ success: true, message: `${OPERATION_TYPES[type]} applied.`, data: shape(op) });
   } catch (err) {

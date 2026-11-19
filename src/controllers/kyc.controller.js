@@ -1,5 +1,6 @@
 const { Kyc, User } = require('../models');
 const { sendKycApprovalEmail } = require('../utils/email.helper');
+const { notifyUser } = require('../utils/notifyUser');
 
 // ─── USER PANEL ENDPOINTS ───
 
@@ -238,6 +239,8 @@ async function approveKyc(req, res, next) {
       sendKycApprovalEmail(targetEmail, targetName);
     }
 
+    notifyUser(kyc.userId, { type: 'kyc', title: 'Identity verified', message: 'Your KYC has been approved. Your account is fully verified.' });
+
     return res.status(200).json({
       success: true,
       message: 'KYC approved successfully.',
@@ -302,6 +305,8 @@ async function approveKycByUser(req, res, next) {
       sendKycApprovalEmail(targetEmail, targetName);
     }
 
+    notifyUser(kyc.userId, { type: 'kyc', title: 'Identity verified', message: 'Your KYC has been approved. Your account is fully verified.' });
+
     return res.status(200).json({
       success: true,
       message: 'KYC approved successfully.',
@@ -342,6 +347,8 @@ async function rejectKyc(req, res, next) {
       reviewedAt: new Date(),
       updatedBy: req.user.id
     });
+
+    notifyUser(kyc.userId, { type: 'kyc', title: 'Verification rejected', message: `Your KYC was not approved.${reason ? ` Reason: ${reason}` : ''} Please update your documents and resubmit.` });
 
     return res.status(200).json({
       success: true,

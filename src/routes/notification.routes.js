@@ -9,6 +9,7 @@ const {
   updateTemplate,
   deleteTemplate,
   getUnreadNotifications,
+  getMyNotifications,
   markAsRead,
   markAllAsRead
 } = require('../controllers/notification.controller');
@@ -32,6 +33,7 @@ router.delete('/templates/:id', requirePermission('platform_settings', 'edit'), 
 
 // App Notification endpoints
 router.get('/unread', getUnreadNotifications);
+router.get('/my', getMyNotifications);
 router.put('/mark-all-read', markAllAsRead);
 router.put('/:id/read', markAsRead);
 

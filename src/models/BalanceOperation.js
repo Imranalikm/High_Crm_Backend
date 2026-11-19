@@ -4,8 +4,8 @@ const sequelize = require('../config/database');
 /**
  * Admin balance operations other than deposits/withdrawals
  * (Credit, Charge, Correction, Bonus, Commission, Tax, Dividend, DividendFranked).
- * `type` is the gateway TxnType number (2-9). `amount` is signed: negative
- * removes (e.g. credit out, bonus removal).
+ * `type` is the gateway TxnType number (2-9). `amount` is the positive amount
+ * sent to MT5 with that type.
  */
 const BalanceOperation = sequelize.define('BalanceOperation', {
   id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
