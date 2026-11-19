@@ -21,7 +21,7 @@ const POSITIONS_URL = process.env.MT5_WS_POSITIONS_URL || `${WS_BASE}/ws/positio
 
 const FLUSH_MS = Number(process.env.MT5_WS_FLUSH_MS || 1000);              // batch interval to browsers
 const OWNERS_REFRESH_MS = 60 * 1000;                                        // reload login -> user map
-const PERSIST_MS = Number(process.env.MT5_WS_PERSIST_MS || 5 * 60 * 1000);  // write balances to DB
+const PERSIST_MS = Number(process.env.MT5_WS_PERSIST_MS || 30 * 1000);      // write changed balances to DB
 // Feeds only send on change, so a quiet market is normal. Only treat very long
 // silence as a dead (half-open) connection; real drops are caught by onclose.
 const STALE_MS = 10 * 60 * 1000;
@@ -269,6 +269,34 @@ async function persistBalances() {
 }
 
 /* ── public API ───────────────────────────────────────────── */
+
+/**
+ * Overlay live MT5 values onto an account record (plain object with
+ * `accountid`). Leaves the stored values when no live data has arrived.
+ */
+function withLive(acc) {
+  const live = acc && latest.get(String(acc.accountid));
+  if (!live) return { ...acc, isLive: false };
+  return {
+    ...acc,
+    balance: live.balance,
+    equity: live.equity,
+    credit: live.credit,
+    margin: live.margin,
+    marginFree: live.marginFree,
+    marginLevel: live.marginLevel,
+    floating: live.floating,
+    profit: live.profit,
+    liveTime: live.time,
+    isLive: true,
+  };
+}
+
+/** Live balance for a login, or null when the feed has no data for it. */
+function liveBalance(login) {
+  const live = latest.get(String(login));
+  return live && Number.isFinite(Number(live.balance)) ? Number(live.balance) : null;
+}
 const isStaff = (user) => !!(user?.role && user.role.type !== 'user');
 
 /** Account snapshot a given socket user is allowed to see. */
@@ -312,6 +340,8 @@ module.exports = {
   refreshOwners,
   snapshotFor,
   positionsSnapshotFor,
+  withLive,
+  liveBalance,
   /** Latest live payload for one login, or undefined if none received yet. */
   liveFor: (login) => latest.get(String(login)),
   isConnected: () => accountsFeed.connected,

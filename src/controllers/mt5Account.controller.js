@@ -464,7 +464,8 @@ const getMT5Accounts = async (req, res) => {
     const accountsWithMinDeposit = accounts.map(acc => {
       const group = crmGroups.find(g => g.name === acc.groupName);
       return {
-        ...acc.toJSON(),
+        // Balance/equity/margin from the live MT5 feed (DB balance only follows CRM deposits)
+        ...mt5Stream.withLive(acc.toJSON()),
         minDeposit: group ? group.minDeposit : 0
       };
     });
@@ -495,7 +496,8 @@ const getMT5AccountByLogin = async (req, res) => {
       return res.status(404).json({ success: false, message: 'MT5 account not found.' });
     }
 
-    return res.status(200).json({ success: true, data: account });
+    // Balance/equity/margin from the live MT5 feed (DB balance only follows CRM deposits)
+    return res.status(200).json({ success: true, data: mt5Stream.withLive(account.toJSON()) });
   } catch (err) {
     console.error('Error fetching MT5 account:', err.message);
     return res.status(500).json({ success: false, message: 'Internal Server Error' });

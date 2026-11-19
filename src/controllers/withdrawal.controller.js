@@ -3,6 +3,14 @@ const { Withdrawal, Mt5Account, User, sequelize } = require('../models');
 const { getToken, connectManager } = require('../utils/tokenFetch');
 const { Op } = require('sequelize');
 const { emitFinanceUpdate } = require('../utils/financeEvents');
+const mt5Stream = require('../services/mt5Stream');
+
+// Real MT5 balance from the live feed; the DB copy only follows CRM deposits/withdrawals
+// and misses trading P/L. Falls back to the DB copy when the feed has no data.
+const availableBalance = (mt5Account) => {
+  const live = mt5Stream.liveBalance(mt5Account.accountid);
+  return live !== null ? live : (parseFloat(mt5Account.balance) || 0);
+};
 
 const createWithdrawal = async (req, res) => {
   const transaction = await sequelize.transaction();
@@ -42,7 +50,7 @@ const createWithdrawal = async (req, res) => {
       return res.status(400).json({ message: 'User ID is required for admin withdrawals.' });
     }
 
-    if (isAdmin && (parseFloat(mt5Account.balance) || 0) < Number(amount)) {
+    if (isAdmin && availableBalance(mt5Account) < Number(amount)) {
       await transaction.rollback();
       return res.status(400).json({ message: 'Insufficient MT5 balance.' });
     }
@@ -143,7 +151,7 @@ const approveWithdrawal = async (req, res) => {
       return res.status(404).json({ message: 'MT5 account not found.' });
     }
 
-    if ((parseFloat(mt5Account.balance) || 0) < Number(withdrawal.amount)) {
+    if (availableBalance(mt5Account) < Number(withdrawal.amount)) {
       await transaction.rollback();
       return res.status(400).json({ message: 'Insufficient MT5 balance.' });
     }
