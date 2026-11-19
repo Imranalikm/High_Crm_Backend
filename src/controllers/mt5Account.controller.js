@@ -466,7 +466,8 @@ const getMT5Accounts = async (req, res) => {
       return {
         // Balance/equity/margin from the live MT5 feed (DB balance only follows CRM deposits)
         ...mt5Stream.withLive(acc.toJSON()),
-        minDeposit: group ? group.minDeposit : 0
+        minDeposit: group ? group.minDeposit : 0,
+        groupType: group ? group.groupType : null
       };
     });
 
